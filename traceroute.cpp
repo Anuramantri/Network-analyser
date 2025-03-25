@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <numeric>
 #include <iomanip>
+#include <fstream>
 
 #define MAX_PACKET_SIZE 4096
 #define DEFAULT_MAX_HOPS 30
@@ -325,43 +326,30 @@ std::vector<HopInfo> traceroute(const char *destination, int max_hops, int timeo
 }
 
 // Calculate total bandwidth and find bottleneck
-void calculate_network_stats(const std::vector<HopInfo>& hops) {
-    // Find minimum bandwidth (bottleneck)
-    double min_bandwidth = -1;
-    int bottleneck_hop = -1;
-    std::string bottleneck_ip;
+std::string calculate_network_stats(const std::vector<HopInfo>& hops) {
+    std::ostringstream stats;
     
-    // Sum of all valid bandwidths
-    double total_bandwidth = 0;
-    int valid_bandwidth_count = 0;
+    stats << "\n--- Network Statistics ---\n";
+    stats << "Total Hops: " << hops.size() << "\n";
     
-    for (size_t i = 0; i < hops.size(); i++) {
-        if (hops[i].bandwidth > 0) {
-            total_bandwidth += hops[i].bandwidth;
-            valid_bandwidth_count++;
-            
-            if (min_bandwidth < 0 || hops[i].bandwidth < min_bandwidth) {
-                min_bandwidth = hops[i].bandwidth;
-                bottleneck_hop = hops[i].hop;
-                bottleneck_ip = hops[i].ip_address;
-            }
+    double total_rtt = 0;
+    double min_bandwidth = std::numeric_limits<double>::max();
+
+    for (const auto& hop : hops) {
+        total_rtt += hop.rtt;
+        if (hop.bandwidth < min_bandwidth) {
+            min_bandwidth = hop.bandwidth;
         }
     }
-    
-    std::cout << "\n===== Network Statistics =====" << std::endl;
-    
-    if (valid_bandwidth_count > 0) {
-        std::cout << "Total measured bandwidth: " << total_bandwidth << " Mbps" << std::endl;
-        std::cout << "Average bandwidth per hop: " << (total_bandwidth / valid_bandwidth_count) << " Mbps" << std::endl;
+
+    if (!hops.empty()) {
+        stats << "Average RTT: " << (total_rtt / hops.size()) << " ms\n";
+        stats << "Bottleneck Bandwidth: " << min_bandwidth << " Mbps\n";
     } else {
-        std::cout << "No valid bandwidth measurements available" << std::endl;
+        stats << "No hops recorded.\n";
     }
-    
-    if (bottleneck_hop > 0) {
-        std::cout << "Network bottleneck: Hop " << bottleneck_hop << " (" << bottleneck_ip 
-                  << ") with " << min_bandwidth << " Mbps" << std::endl;
-        std::cout << "End-to-end effective bandwidth: " << min_bandwidth << " Mbps" << std::endl;
-    }
+
+    return stats.str(); // Return statistics as a string
 }
 
 int main(int argc, char *argv[]) {
@@ -375,10 +363,36 @@ int main(int argc, char *argv[]) {
     int timeout = (argc > 3) ? atoi(argv[3]) : DEFAULT_TIMEOUT;
     int probes = (argc > 4) ? atoi(argv[4]) : DEFAULT_PROBES;
     
+    std::ofstream file("traceroute_output.txt");
+    if (!file) {
+        std::cerr << "Error: Could not open output file." << std::endl;
+        return 1;
+    }
+
+    auto print = [&file](const std::string &message) {
+        std::cout << message;
+        file << message;
+    };
+
+    print("Traceroute to " + std::string(destination) + ", " + std::to_string(max_hops) + " hops max\n\n");
+    print("Hop\tIP Address\t\tRTT (ms)\t\tBandwidth (Mbps)\n");
+    print(std::string(70, '-') + "\n");
+
     std::vector<HopInfo> hops = traceroute(destination, max_hops, timeout, probes);
+
+    for (size_t i = 0; i < hops.size(); ++i) {
+        std::ostringstream hop_info;
+        hop_info << (i + 1) << "\t" << hops[i].ip_address << "\t\t"
+                 << hops[i].rtt << "\t\t" << hops[i].bandwidth << "\n";
+        print(hop_info.str());
+    }
+
+    print("\n");
+
+    std::string stats = calculate_network_stats(hops); 
+    print(stats); // Print and write to file
     
-    // Calculate and display network statistics
-    calculate_network_stats(hops);
-    
+    file.close();
+    std::cout << "\nResults saved in 'traceroute_output.txt'" << std::endl;
     return 0;
 }
