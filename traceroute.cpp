@@ -369,14 +369,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    auto print = [&file](const std::string &message) {
-        std::cout << message;
-        file << message;
-    };
+    std::cout << "Traceroute to " << destination << ", " << max_hops << " hops max\n\n";
+    // std::cout << "Hop\tIP Address\t\tRTT (ms)\t\tBandwidth (Mbps)\n";
+    // std::cout << std::string(70, '-') << "\n";
 
-    print("Traceroute to " + std::string(destination) + ", " + std::to_string(max_hops) + " hops max\n\n");
-    print("Hop\tIP Address\t\tRTT (ms)\t\tBandwidth (Mbps)\n");
-    print(std::string(70, '-') + "\n");
+    file << "Traceroute to " << destination << ", " << max_hops << " hops max\n\n";
+    file << "Hop\tIP Address\t\tRTT (ms)\t\tBandwidth (Mbps)\n";
+    file << std::string(70, '-') << "\n";
 
     std::vector<HopInfo> hops = traceroute(destination, max_hops, timeout, probes);
 
@@ -384,14 +383,14 @@ int main(int argc, char *argv[]) {
         std::ostringstream hop_info;
         hop_info << (i + 1) << "\t" << hops[i].ip_address << "\t\t"
                  << hops[i].rtt << "\t\t" << hops[i].bandwidth << "\n";
-        print(hop_info.str());
+        // std::cout << hop_info.str();
+        file << hop_info.str();
     }
 
-    print("\n");
+    std::string stats = calculate_network_stats(hops);
+    std::cout << "\n" << stats;
+    file << "\n" << stats;
 
-    std::string stats = calculate_network_stats(hops); 
-    print(stats); // Print and write to file
-    
     file.close();
     std::cout << "\nResults saved in 'traceroute_output.txt'" << std::endl;
     return 0;
