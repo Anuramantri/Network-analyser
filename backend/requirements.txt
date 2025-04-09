@@ -2,3 +2,4 @@ fastapi
 folium
 uvicorn
 pydantic
+python-multipart
