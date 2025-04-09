@@ -219,7 +219,7 @@
 
 #define MAX_HOPS 30
 #define PORT 33434
-#define TIMEOUT_SEC 10
+#define TIMEOUT_SEC 3
 #define PACKET_SIZE 60  // bytes
 
 // Calculate RTT in milliseconds
