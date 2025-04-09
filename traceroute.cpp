@@ -44,18 +44,18 @@ unsigned short calculate_checksum(unsigned short *addr, int len) {
     unsigned short answer = 0;
 
     while (nleft > 1) {
-        sum += *w++;
-        nleft -= 2;
+        sum += *w++; // sum up 16 bits at a time
+        nleft -= 2; // move to next 16 bits
     }
 
     if (nleft == 1) {
-        *(unsigned char *)(&answer) = *(unsigned char *)w;
-        sum += answer;
+        *(unsigned char *)(&answer) = *(unsigned char *)w; // copy the first byte of w into the first byte of answer
+        sum += answer; // add the last byte 
     }
 
-    sum = (sum >> 16) + (sum & 0xFFFF);
-    sum += (sum >> 16);
-    answer = ~sum;
+    sum = (sum >> 16) + (sum & 0xFFFF); // adds the upper 16 bits to the lower 16 bits
+    sum += (sum >> 16); // fold again to add any carry
+    answer = ~sum; // 1s complement
     return answer;
 }
 
@@ -71,18 +71,18 @@ int create_icmp_socket() {
 
 // Create ICMP echo request packet
 void create_icmp_packet(ICMPPacket *packet, int seq, int size) {
-    memset(packet, 0, sizeof(ICMPPacket));
-    packet->header.type = ICMP_ECHO;
-    packet->header.code = 0;
-    packet->header.un.echo.id = htons(getpid() & 0xFFFF);
-    packet->header.un.echo.sequence = htons(seq);
+    memset(packet, 0, sizeof(ICMPPacket)); // init packet to zero
+    packet->header.type = ICMP_ECHO; // ICMP echo request type
+    packet->header.code = 0; // code 0 for echo request
+    packet->header.un.echo.id = htons(getpid() & 0xFFFF); // set process ID
+    packet->header.un.echo.sequence = htons(seq); //  sequence number
     
     // Fill data part with pattern
     for (int i = 0; i < size - sizeof(struct icmphdr); i++) {
         packet->data[i] = 'x';
     }
     
-    // Calculate checksum
+    
     packet->header.checksum = 0;
     packet->header.checksum = calculate_checksum((unsigned short *)packet, size);
 }
@@ -107,7 +107,7 @@ double estimate_bandwidth(const char *dest_addr, int ttl) {
     // Packet sizes for bandwidth estimation - use larger difference
     int small_size = 64;   // Smaller packet
     int large_size = 1400; // Larger packet
-    int num_probes = 5;    // Increased number of probes for better statistics
+    int num_probes = 5;    // number of probes sent back to back
     
     std::vector<double> bandwidths;
     
@@ -141,7 +141,7 @@ double estimate_bandwidth(const char *dest_addr, int ttl) {
         timeout.tv_sec = 1;
         timeout.tv_usec = 0;
         
-        // Receive first packet
+        // Receive first packet and record time
         auto start_time = std::chrono::high_resolution_clock::now();
         
         if (select(sock + 1, &read_set, NULL, NULL, &timeout) <= 0) {
@@ -178,8 +178,7 @@ double estimate_bandwidth(const char *dest_addr, int ttl) {
         // Skip if interval is too small (likely measurement error)
         if (interval <= 0) continue;
         
-        // Calculate bandwidth using the formula: B = packet size / interval
-        // Convert to Mbps: (bytes * 8) / (microseconds / 1,000,000) / 1,000,000
+        // Calculate bandwidth using the formula: B = packet size (bits) / interval
         double bw = (large_size * 8.0) / interval;
         bandwidths.push_back(bw);
     }
@@ -276,7 +275,7 @@ std::vector<HopInfo> traceroute(const char *destination, int max_hops, int timeo
         HopInfo hop;
         hop.hop = ttl;
         
-        if (bytes_received < 0) {
+        if (bytes_received < 0) { // if timed out, unreachable
             std::cout << ttl << "\t*\t\tRequest timed out" << std::endl;
             hop.ip_address = "*";
             hop.rtt = -1;
@@ -329,7 +328,7 @@ std::vector<HopInfo> traceroute(const char *destination, int max_hops, int timeo
 std::string calculate_network_stats(const std::vector<HopInfo>& hops) {
     std::ostringstream stats;
     
-    stats << "\n--- Network Statistics ---\n";
+    
     stats << "Total Hops: " << hops.size() << "\n";
     
     double total_rtt = 0;
@@ -373,7 +372,7 @@ int main(int argc, char *argv[]) {
     // std::cout << "Hop\tIP Address\t\tRTT (ms)\t\tBandwidth (Mbps)\n";
     // std::cout << std::string(70, '-') << "\n";
 
-    file << "Traceroute to " << destination << ", " << max_hops << " hops max\n\n";
+    file << "Traced route to " << destination << ", " << max_hops << " hops max\n\n";
     file << "Hop\tIP Address\t\tRTT (ms)\t\tBandwidth (Mbps)\n";
     file << std::string(70, '-') << "\n";
 
@@ -387,11 +386,11 @@ int main(int argc, char *argv[]) {
         file << hop_info.str();
     }
 
+    std::ofstream stat_file("stats.txt");
     std::string stats = calculate_network_stats(hops);
-    std::cout << "\n" << stats;
-    file << "\n" << stats;
-
+    stat_file<< stats;
+    
     file.close();
-    std::cout << "\nResults saved in 'traceroute_output.txt'" << std::endl;
+    
     return 0;
 }
