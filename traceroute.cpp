@@ -105,7 +105,6 @@ double estimate_bandwidth(const char *dest_addr, int ttl) {
     dest.sin_addr.s_addr = inet_addr(dest_addr);
     
     // Packet sizes for bandwidth estimation - use larger difference
-    int small_size = 64;   // Smaller packet
     int large_size = 1400; // Larger packet
     int num_probes = 5;    // number of probes sent back to back
     
