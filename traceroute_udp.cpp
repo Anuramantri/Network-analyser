@@ -1,210 +1,6 @@
-// #include <iostream>
-// #include <fstream>
-// #include <cstring>
-// #include <chrono>
-// #include <netinet/ip_icmp.h>
-// #include <netinet/icmp6.h>
-// #include <netinet/in.h>
-// #include <netdb.h>
-// #include <sys/socket.h>
-// #include <arpa/inet.h>
-// #include <unistd.h>
-// #include <errno.h>
-// #include <cmath>
-// #include <iomanip>
-
-// #define MAX_HOPS 30
-// #define PORT 33434
-// #define TIMEOUT_SEC 3
-// #define PACKET_SIZE 60  // bytes
-
-// double calculateRTT(auto start, auto end) {
-//     return std::chrono::duration<double, std::milli>(end - start).count();
-// }
-
-// int main(int argc, char *argv[]) {
-//     if (argc != 2) {
-//         std::cerr << "Usage: " << argv[0] << " <hostname or IP>\n";
-//         return 1;
-//     }
-
-//     const char *target = argv[1];
-//     struct addrinfo hints{}, *res;
-
-//     memset(&hints, 0, sizeof(hints));
-//     hints.ai_socktype = SOCK_DGRAM;
-//     hints.ai_family = AF_UNSPEC;  // Support both IPv4 and IPv6
-
-//     int status = getaddrinfo(target, nullptr, &hints, &res);
-//     if (status != 0 || !res) {
-//         std::cerr << "getaddrinfo error: " << gai_strerror(status) << "\n";
-//         return 1;
-//     }
-
-//     char ip_str[INET6_ADDRSTRLEN];
-//     void *addr_ptr = nullptr;
-//     int family = res->ai_family;
-
-//     if (family == AF_INET) {
-//         addr_ptr = &((sockaddr_in*)res->ai_addr)->sin_addr;
-//     } else if (family == AF_INET6) {
-//         addr_ptr = &((sockaddr_in6*)res->ai_addr)->sin6_addr;
-//     } else {
-//         std::cerr << "Unsupported address family.\n";
-//         return 1;
-//     }
-
-//     inet_ntop(family, addr_ptr, ip_str, sizeof(ip_str));
-//     std::string destination_ip(ip_str);
-
-//     std::cout << "Traceroute to " << target << " [" << destination_ip << "], 30 hops max\n\n";
-//     std::cout << "Hop\tIP Address\t\tRTT (ms)\t\tBandwidth (Mbps)\n";
-//     std::cout << "----------------------------------------------------------------------\n";
-
-//     std::ofstream outfile("traceroute_output.txt");
-//     outfile << "Traceroute to " << target << " [" << destination_ip << "], 30 hops max\n\n";
-//     outfile << "Hop\tIP Address\t\tRTT (ms)\t\tBandwidth (Mbps)\n";
-//     outfile << "----------------------------------------------------------------------\n";
-
-//     double total_rtt = 0;
-//     int successful_hops = 0;
-//     double bottleneck = std::numeric_limits<double>::max();
-
-//     for (int ttl = 1; ttl <= MAX_HOPS; ++ttl) {
-//         int send_sock, recv_sock;
-
-//         if (family == AF_INET) {
-//             send_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-//             recv_sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-//         } else {
-//             send_sock = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
-//             recv_sock = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
-//         }
-
-//         if (send_sock < 0 || recv_sock < 0) {
-//             std::cerr << "Socket creation failed: " << strerror(errno) << "\n";
-//             return 1;
-//         }
-
-//         if (family == AF_INET)
-//             setsockopt(send_sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
-//         else
-//             setsockopt(send_sock, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof(ttl));
-
-//         struct timeval timeout{};
-//         timeout.tv_sec = TIMEOUT_SEC;
-//         timeout.tv_usec = 0;
-//         setsockopt(recv_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
-//         char msg[PACKET_SIZE] = "Hello UDP";
-//         char buffer1[512], buffer2[512];
-//         char sender_ip[INET6_ADDRSTRLEN];
-
-//         sockaddr_storage dest_addr{};
-//         socklen_t addr_len;
-
-//         if (family == AF_INET) {
-//             sockaddr_in *dest = (sockaddr_in *)&dest_addr;
-//             dest->sin_family = AF_INET;
-//             dest->sin_port = htons(PORT);
-//             inet_pton(AF_INET, destination_ip.c_str(), &(dest->sin_addr));
-//             addr_len = sizeof(sockaddr_in);
-//         } else {
-//             sockaddr_in6 *dest6 = (sockaddr_in6 *)&dest_addr;
-//             dest6->sin6_family = AF_INET6;
-//             dest6->sin6_port = htons(PORT);
-//             inet_pton(AF_INET6, destination_ip.c_str(), &(dest6->sin6_addr));
-//             addr_len = sizeof(sockaddr_in6);
-//         }
-
-//         // Send first packet
-//         auto send_time1 = std::chrono::steady_clock::now();
-//         sendto(send_sock, msg, sizeof(msg), 0, (sockaddr *)&dest_addr, addr_len);
-
-//         // Slight delay
-//         usleep(1000);
-
-//         // Send second packet
-//         auto send_time2 = std::chrono::steady_clock::now();
-//         sendto(send_sock, msg, sizeof(msg), 0, (sockaddr *)&dest_addr, addr_len);
-
-//         sockaddr_storage sender{};
-//         socklen_t sender_len = sizeof(sender);
-//         auto recv_time1 = send_time1, recv_time2 = send_time2;
-//         int recv_count = 0;
-
-//         while (recv_count < 2) {
-//             char temp_buf[512];
-//             sockaddr_storage temp_sender{};
-//             socklen_t temp_len = sizeof(temp_sender);
-
-//             int bytes = recvfrom(recv_sock, temp_buf, sizeof(temp_buf), 0, (sockaddr*)&temp_sender, &temp_len);
-//             if (bytes > 0) {
-//                 if (recv_count == 0) {
-//                     recv_time1 = std::chrono::steady_clock::now();
-//                     sender = temp_sender;
-//                 } else {
-//                     recv_time2 = std::chrono::steady_clock::now();
-//                 }
-//                 recv_count++;
-//             } else {
-//                 break;
-//             }
-//         }
-
-//         close(send_sock);
-//         close(recv_sock);
-
-//         if (recv_count == 2) {
-//             if (family == AF_INET) {
-//                 inet_ntop(AF_INET, &(((sockaddr_in*)&sender)->sin_addr), sender_ip, sizeof(sender_ip));
-//             } else {
-//                 inet_ntop(AF_INET6, &(((sockaddr_in6*)&sender)->sin6_addr), sender_ip, sizeof(sender_ip));
-//             }
-
-//             double rtt = calculateRTT(send_time1, recv_time1);
-//             double reply_gap_ms = calculateRTT(recv_time1, recv_time2);
-//             double bandwidth_mbps = reply_gap_ms > 0 ? (PACKET_SIZE * 8) / (reply_gap_ms / 1000.0) / 1e6 : 0;
-
-//             total_rtt += rtt;
-//             ++successful_hops;
-//             if (bandwidth_mbps < bottleneck) bottleneck = bandwidth_mbps;
-
-//             std::cout << ttl << "\t" << sender_ip << "\t\t" << std::fixed << std::setprecision(3) << rtt
-//                       << "\t\t" << std::setprecision(5) << bandwidth_mbps << "\n";
-
-//             outfile << ttl << "\t" << sender_ip << "\t\t" << std::fixed << std::setprecision(3) << rtt
-//                     << "\t\t" << std::setprecision(5) << bandwidth_mbps << "\n";
-
-//             if (destination_ip == sender_ip) break;
-//         } else {
-//             std::cout << ttl << "\t*\tTimeout\n";
-//             outfile << ttl << "\t*\tTimeout\n";
-//         }
-//     }
-
-//     outfile << "\n--- Network Statistics ---\n";
-//     outfile << "Total Hops: " << successful_hops << "\n";
-//     if (successful_hops > 0) {
-//         outfile << "Average RTT: " << std::fixed << std::setprecision(3) << (total_rtt / successful_hops) << " ms\n";
-//         outfile << "Bottleneck Bandwidth: " << std::setprecision(5) << bottleneck << " Mbps\n";
-//     } else {
-//         outfile << "Average RTT: N/A\n";
-//         outfile << "Bottleneck Bandwidth: N/A\n";
-//     }
-
-//     outfile.close();
-//     freeaddrinfo(res);
-//     std::cout << "\nResults saved in 'traceroute_output.txt'\n";
-//     return 0;
-// }
-
-
-
-
-
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <cstring>
 #include <chrono>
 #include <netinet/ip_icmp.h>
@@ -216,15 +12,47 @@
 #include <errno.h>
 #include <cmath>
 #include <iomanip>
+#include <ctime>
+#include <map>
+#include <vector>
+#include <numeric>
+#include <limits>
+#include <algorithm>
 
 #define MAX_HOPS 30
 #define PORT 33434
 #define TIMEOUT_SEC 3
 #define PACKET_SIZE 60  // bytes
+#define NUM_PAIRS 5     // number of UDP packet pairs (probes) per hop
 
 // Calculate RTT in milliseconds
 double calculateRTT(auto start, auto end) {
     return std::chrono::duration<double, std::milli>(end - start).count();
+}
+
+// Load usage history from CSV
+std::map<std::string, int> loadUsageHistory(const std::string &csv_path) {
+    std::map<std::string, int> usage;
+    std::ifstream infile(csv_path);
+    std::string line;
+    std::getline(infile, line); // Skip header
+    while (std::getline(infile, line)) {
+        std::stringstream ss(line);
+        std::string count_str, ip, hostname, timestamp;
+        std::getline(ss, count_str, ',');
+        std::getline(ss, ip, ',');
+        std::getline(ss, hostname, ',');
+        std::getline(ss, timestamp, ',');
+        if (!ip.empty() && !count_str.empty()) {
+            usage[ip] = std::stoi(count_str);
+        }
+    }
+    return usage;
+}
+
+bool isFileEmptyOrMissing(const std::string& path) {
+    std::ifstream infile(path);
+    return !infile.good() || infile.peek() == std::ifstream::traits_type::eof();
 }
 
 int main(int argc, char *argv[]) {
@@ -244,124 +72,189 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Resolve destination to IPv4 string.
     struct sockaddr_in *ipv4 = (struct sockaddr_in *)res->ai_addr;
     char ip_str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(ipv4->sin_addr), ip_str, sizeof(ip_str));
     std::string destination_ip(ip_str);
 
+    std::string csv_path = "traceroute_history.csv";
+    auto usage_map = loadUsageHistory(csv_path);
+    int current_usage = ++usage_map[destination_ip];
+
+    // Get current timestamp.
+    std::time_t now = std::time(nullptr);
+    char timestamp[64];
+    std::strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+
     std::cout << "Traceroute to " << target << ", 30 hops max\n\n";
-    std::cout << "Hop\tIP Address\t\tRTT (ms)\t\tBandwidth (Mbps)\n";
+    std::cout << "Hop\tIP Address\t\tRTT (ms)\tJitter (ms)\tBandwidth (Mbps)\n";
     std::cout << "----------------------------------------------------------------------\n";
 
     std::ofstream outfile("traceroute_output.txt");
     outfile << "Traceroute to " << target << ", 30 hops max\n\n";
-    outfile << "Hop\tIP Address\t\tRTT (ms)\t\tBandwidth (Mbps)\n";
+    outfile << "Hop\tIP Address\t\tRTT (ms)\tJitter (ms)\tBandwidth (Mbps)\n";
     outfile << "----------------------------------------------------------------------\n";
+
+    bool write_headers = isFileEmptyOrMissing(csv_path);
+    std::ofstream csvout(csv_path, std::ios::app);
+    if (write_headers) {
+        csvout << "usage_count,destination_ip,hostname,timestamp,hop,hop_ip,rtt_ms,jitter_ms,bandwidth_mbps\n";
+    }
 
     double total_rtt = 0;
     int successful_hops = 0;
-    double bottleneck = std::numeric_limits<double>::max();
+    double overall_bottleneck = std::numeric_limits<double>::max();
+    bool destinationReached = false;
 
-    for (int ttl = 1; ttl <= MAX_HOPS; ++ttl) {
-        int send_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-        int recv_sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+    // Iterate through hops via TTL values.
+    for (int ttl = 1; ttl <= MAX_HOPS && !destinationReached; ++ttl) {
+        std::vector<double> rtt_measurements;
+        std::vector<double> bw_measurements;
+        std::string hop_ip = "";
 
-        if (send_sock < 0 || recv_sock < 0) {
-            std::cerr << "Socket creation failed: " << strerror(errno) << "\n";
-            return 1;
-        }
-
-        setsockopt(send_sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
-
-        struct timeval timeout{};
-        timeout.tv_sec = TIMEOUT_SEC;
-        timeout.tv_usec = 0;
-        setsockopt(recv_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
-        sockaddr_in dest{};
-        dest.sin_family = AF_INET;
-        dest.sin_port = htons(PORT);
-        inet_pton(AF_INET, destination_ip.c_str(), &(dest.sin_addr));
-
-        char msg[PACKET_SIZE] = "Hello UDP";
-        char buffer1[512], buffer2[512];
-        sockaddr_in sender{};
-        socklen_t sender_len = sizeof(sender);
-
-        // Send first packet
-        auto send_time1 = std::chrono::steady_clock::now();
-        sendto(send_sock, msg, sizeof(msg), 0, (sockaddr*)&dest, sizeof(dest));
-
-        // Slight delay
-        usleep(1000);
-
-        // Send second packet
-        auto send_time2 = std::chrono::steady_clock::now();
-        sendto(send_sock, msg, sizeof(msg), 0, (sockaddr*)&dest, sizeof(dest));
-
-        // Receive ICMP responses
-        auto recv_time1 = send_time1, recv_time2 = send_time2;
-        int recv_count = 0;
-
-        while (recv_count < 2) {
-            char temp_buf[512];
-            sockaddr_in temp_sender{};
-            socklen_t temp_len = sizeof(temp_sender);
-
-            int bytes = recvfrom(recv_sock, temp_buf, sizeof(temp_buf), 0, (sockaddr*)&temp_sender, &temp_len);
-            if (bytes > 0) {
-                if (recv_count == 0) {
-                    recv_time1 = std::chrono::steady_clock::now();
-                    sender = temp_sender;
-                } else {
-                    recv_time2 = std::chrono::steady_clock::now();
-                }
-                recv_count++;
-            } else {
-                break;
+        // Implement improved packet pair technique using NUM_PAIRS UDP pairs.
+        for (int pair = 0; pair < NUM_PAIRS; pair++) {
+            int send_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+            int recv_sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+            if (send_sock < 0 || recv_sock < 0) {
+                std::cerr << "Socket creation failed: " << strerror(errno) << "\n";
+                return 1;
             }
-        }
 
-        close(send_sock);
-        close(recv_sock);
+            // Set TTL for the send socket.
+            setsockopt(send_sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
 
-        char sender_ip[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &(sender.sin_addr), sender_ip, sizeof(sender_ip));
+            // Set timeout for the receive socket.
+            struct timeval timeout{};
+            timeout.tv_sec = TIMEOUT_SEC;
+            timeout.tv_usec = 0;
+            setsockopt(recv_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
-        if (recv_count == 2) {
-            double rtt = calculateRTT(send_time1, recv_time1);
-            double reply_gap_ms = calculateRTT(recv_time1, recv_time2);
-            double bandwidth_mbps = reply_gap_ms > 0 ? (PACKET_SIZE * 8) / (reply_gap_ms / 1000.0) / 1e6 : 0;
+            // Set up destination address.
+            sockaddr_in dest{};
+            dest.sin_family = AF_INET;
+            dest.sin_port = htons(PORT);
+            inet_pton(AF_INET, destination_ip.c_str(), &(dest.sin_addr));
 
-            total_rtt += rtt;
+            char msg[PACKET_SIZE] = "Hello UDP";
+            sockaddr_in sender{};
+            socklen_t sender_len = sizeof(sender);
+
+            // Send first UDP packet.
+            auto send_time1 = std::chrono::steady_clock::now();
+            sendto(send_sock, msg, sizeof(msg), 0, (sockaddr*)&dest, sizeof(dest));
+            // Send second UDP packet back-to-back.
+            usleep(1000); // 1ms delay
+            auto send_time2 = std::chrono::steady_clock::now();
+            sendto(send_sock, msg, sizeof(msg), 0, (sockaddr*)&dest, sizeof(dest));
+
+            // Receive two ICMP responses.
+            auto recv_time1 = send_time1, recv_time2 = send_time2;
+            int recv_count = 0;
+            while (recv_count < 2) {
+                char temp_buf[512];
+                sockaddr_in temp_sender{};
+                socklen_t temp_len = sizeof(temp_sender);
+                int bytes = recvfrom(recv_sock, temp_buf, sizeof(temp_buf), 0, (sockaddr*)&temp_sender, &temp_len);
+                if (bytes > 0) {
+                    if (recv_count == 0) {
+                        recv_time1 = std::chrono::steady_clock::now();
+                        sender = temp_sender;
+                    } else {
+                        recv_time2 = std::chrono::steady_clock::now();
+                    }
+                    recv_count++;
+                } else {
+                    break;
+                }
+            }
+
+            close(send_sock);
+            close(recv_sock);
+
+            if (recv_count == 2) {
+                double rtt = calculateRTT(send_time1, recv_time1);
+                auto gap_us = std::chrono::duration_cast<std::chrono::microseconds>(recv_time2 - recv_time1).count();
+                if (gap_us > 0) {
+                    // Calculate bandwidth in Mbps:
+                    double bandwidth_mbps = (PACKET_SIZE * 8.0) / static_cast<double>(gap_us);
+                    rtt_measurements.push_back(rtt);
+                    bw_measurements.push_back(bandwidth_mbps);
+                }
+                char sender_ip[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &(sender.sin_addr), sender_ip, sizeof(sender_ip));
+                hop_ip = sender_ip;
+                if (destination_ip == hop_ip)
+                    destinationReached = true;
+            }
+        } // End of NUM_PAIRS loop
+
+        // If at least one valid probe measurement was obtained for this TTL.
+        if (!rtt_measurements.empty()) {
+            double avg_rtt = std::accumulate(rtt_measurements.begin(), rtt_measurements.end(), 0.0) / rtt_measurements.size();
+
+            // Compute jitter as the standard deviation of the RTT values.
+            double sum_sq_diff = 0.0;
+            for (double r : rtt_measurements) {
+                sum_sq_diff += (r - avg_rtt) * (r - avg_rtt);
+            }
+            double jitter = std::sqrt(sum_sq_diff / rtt_measurements.size());
+
+            double median_bw = 0;
+            if (!bw_measurements.empty()) {
+                std::sort(bw_measurements.begin(), bw_measurements.end());
+                size_t count = bw_measurements.size();
+                if (count % 2 == 0)
+                    median_bw = (bw_measurements[count/2 - 1] + bw_measurements[count/2]) / 2.0;
+                else
+                    median_bw = bw_measurements[count/2];
+            }
+
+            total_rtt += avg_rtt;
             ++successful_hops;
-            if (bandwidth_mbps < bottleneck) bottleneck = bandwidth_mbps;
+            if (median_bw < overall_bottleneck) overall_bottleneck = median_bw;
 
-            std::cout << ttl << "\t" << sender_ip << "\t\t" << std::fixed << std::setprecision(3) << rtt
-                      << "\t\t" << std::setprecision(5) << bandwidth_mbps << "\n";
+            std::cout << ttl << "\t" << hop_ip << "\t\t" 
+                      << std::fixed << std::setprecision(3) << avg_rtt << "\t\t" 
+                      << std::setprecision(3) << jitter << "\t\t" 
+                      << std::setprecision(5) << median_bw << "\n";
 
-            outfile << ttl << "\t" << sender_ip << "\t\t" << std::fixed << std::setprecision(3) << rtt
-                    << "\t\t" << std::setprecision(5) << bandwidth_mbps << "\n";
+            outfile << ttl << "\t" << hop_ip << "\t\t" 
+                    << std::fixed << std::setprecision(3) << avg_rtt << "\t\t" 
+                    << std::setprecision(3) << jitter << "\t\t" 
+                    << std::setprecision(5) << median_bw << "\n";
 
-            if (destination_ip == sender_ip) break;
+            csvout << current_usage << "," << destination_ip << "," << target << "," << timestamp << ","
+                   << ttl << "," << hop_ip << "," 
+                   << std::fixed << std::setprecision(3) << avg_rtt << ","
+                   << std::setprecision(3) << jitter << ","
+                   << std::setprecision(5) << median_bw << "\n";
+
+            if (destinationReached) break;
         } else {
             std::cout << ttl << "\t*\tTimeout\n";
             outfile << ttl << "\t*\tTimeout\n";
+            csvout << current_usage << "," << destination_ip << "," << target << "," << timestamp
+                   << "," << ttl << ",*,Timeout,Timeout,Timeout\n";
         }
-    }
+    } // End TTL loop
 
     outfile << "\n--- Network Statistics ---\n";
     outfile << "Total Hops: " << successful_hops << "\n";
     if (successful_hops > 0) {
-        outfile << "Average RTT: " << std::fixed << std::setprecision(3) << (total_rtt / successful_hops) << " ms\n";
-        outfile << "Bottleneck Bandwidth: " << std::setprecision(5) << bottleneck << " Mbps\n";
+        outfile << "Average RTT: " << std::fixed << std::setprecision(3) 
+                << (total_rtt / successful_hops) << " ms\n";
+        outfile << "Bottleneck Bandwidth: " << std::setprecision(5) 
+                << overall_bottleneck << " Mbps\n";
     } else {
         outfile << "Average RTT: N/A\n";
         outfile << "Bottleneck Bandwidth: N/A\n";
     }
 
     outfile.close();
+    csvout.close();
     freeaddrinfo(res);
-    std::cout << "\nResults saved in 'traceroute_output.txt'\n";
+    std::cout << "\nResults saved in 'traceroute_output.txt' and 'traceroute_history.csv'\n";
     return 0;
 }
