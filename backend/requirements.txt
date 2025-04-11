@@ -3,3 +3,4 @@ folium
 uvicorn
 pydantic
 python-multipart
+networkx
