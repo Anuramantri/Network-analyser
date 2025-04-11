@@ -181,7 +181,6 @@ def create_network_visualization(traceroute_data):
                 color = "#00ff00"   # high
 
             size = min(20 + attrs['rtt'], 60)
-
             net.add_node(
                 node,
                 label=node,
