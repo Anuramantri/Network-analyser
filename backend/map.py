@@ -53,29 +53,36 @@ def generate_map(traceroute_data, token):
         location = get_ip_location(ip, token)
         if location:
             locations.append((ip, location))
+    if not locations:
+        print("[!] No valid IP locations found. Map not generated.")
+        return
 
     for i in range(len(locations) - 1):
         popup_html = f"""
-        <div style="font-family: Arial; font-size: 12px; color: black; padding: 5px; width: 200px;">
+        <div style="font-family: Arial; font-size: 18px; color: black; padding: 5px; width: 200px;">
             <strong>IP Address:</strong> {locations[i][0]}<br>
         </div>
         """
         folium.Marker(
             locations[i][1],
-            popup=folium.Popup(popup_html, max_width=300),
+            popup=folium.Popup(popup_html, max_width=300,parse_html = True),
             icon=folium.Icon(color='blue', icon='info-sign')
         ).add_to(folium_map)
         AntPath([locations[i][1], locations[i + 1][1]], color="red").add_to(folium_map)
 
     # Last hop marker
     popup_html = f"""
-    <div style="font-family: Arial; font-size: 12px; color: black; padding: 5px; width: 200px;">
-        <strong>IP Address:</strong> {locations[-1][0]}<br>
+    <div style="font-family: Arial; font-size: 14px; color: black; padding: 8px; width: 220px;">
+    <b>IP:</b> {ip}<br>
+    <b>RTT:</b> {rtt} ms<br>
+    <b>Jitter:</b> {jitter} ms<br>
+    <b>Bandwidth:</b> {bw} Mbps
     </div>
     """
+    test_popup_html = "<b>HELLO</b><br>This should be on a new line."
     folium.Marker(
         locations[-1][1],
-        popup=folium.Popup(popup_html, max_width=300),
+        popup=folium.Popup(popup_html, max_width=300,parse_html = True),
         icon=folium.Icon(color='red', icon='info-sign')
     ).add_to(folium_map)
 

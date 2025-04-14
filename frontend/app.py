@@ -1,49 +1,86 @@
 import streamlit as st
 import requests
 import streamlit.components.v1 as components
+import io
+from PIL import Image
 
 st.title("Network Analysis and Bandwidth Visualizer")
 
-destination = st.text_input("Enter destination address or domain name")
+# Session state for persisting run status
+if "traceroute_ran" not in st.session_state:
+    st.session_state.traceroute_ran = False
+if "traceroute_data" not in st.session_state:
+    st.session_state.traceroute_data = None
 
-# Packet type selection
+destination = st.text_input("Enter destination address or domain name")
 packet_type = st.radio("Select Packet Type", ("ICMP", "UDP"))
 
 if st.button("Run"):
-    with st.spinner("Running tool..."):
-        response = requests.post(
-            "http://localhost:8000/run_traceroute",
-            data={"destination": destination, "packet_type": packet_type.lower()}
-        )
+    if not destination:
+        st.warning("Please enter a destination.")
+    else:
+        with st.spinner("Running tool..."):
+            response = requests.post(
+                "http://localhost:8000/run_traceroute",
+                data={"destination": destination, "packet_type": packet_type.lower()}
+            )
 
-        if response.ok:
-            data = response.json()
-            st.success("Completed!")
+            if response.ok:
+                st.session_state.traceroute_ran = True
+                st.session_state.traceroute_data = response.json()
+                st.success("Traceroute completed!")
+            else:
+                st.error("Traceroute failed to run.")
+                st.session_state.traceroute_ran = False
 
-            st.markdown("### Network Path Map")
-            components.iframe("http://localhost:8000/map", height=500, width=700)
+# Display results only if traceroute ran
+if st.session_state.traceroute_ran and st.session_state.traceroute_data:
+    data = st.session_state.traceroute_data
 
-            st.markdown("### Network Topology")
-            components.iframe("http://localhost:8000/network_topology", height=750, width=900)
+    st.markdown("### Network Path Map")
+    components.iframe("http://localhost:8000/map", height=500, width=700)
 
-            st.markdown("### Raw Output")
-            st.code(data["traceroute_output"], language="text")
+    st.markdown("### Network Topology")
+    components.iframe("http://localhost:8000/network_topology", height=750, width=900)
 
-            # Show stats
-            st.markdown("### Network Statistics")
-            st.code(data["stats"], language="text")
+    st.markdown("### Raw Output")
+    st.code(data["traceroute_output"], language="text")
 
-        else:
-            st.error("Traceroute failed to run.")
+    st.markdown("### Network Statistics")
+    st.code(data["stats"], language="text")
 
-# response = requests.post(
-#             "http://localhost:8000/run_traceroute",
-#             data={"destination": destination, "packet_type": packet_type.lower()}
-#         )
-# plot_names = [ "bandwidth_afternoon"]
+    # Time of Day selector and plot button
+    st.markdown("### Visual Output (Plots)")
+    time_of_day = st.selectbox("Select Time of Day", ["Morning", "Afternoon", "Evening", "Night"])
 
-# st.markdown("### Visual Output (Plots)")
+    if st.button("Show RTT & Bandwidth Plots"):
+        with st.spinner("Loading plots..."):
+            plot_response = requests.get(
+                "http://localhost:8000/plots",
+                params={"time_of_day": time_of_day, "protocol": packet_type, "destination":destination}
+            )
 
-# for name in plot_names:
-#     image_url = f"http://localhost:8000/plot/{name}"
-#     st.image(image_url, caption=name, use_column_width=True)
+            if plot_response.ok:
+                plot_data = plot_response.json()
+
+                # Fetch RTT image
+                rtt_url = f"http://localhost:8000{plot_data['rtt_plot']}"
+                rtt_img_response = requests.get(rtt_url)
+
+                # Fetch Bandwidth image
+                bw_url = f"http://localhost:8000{plot_data['bandwidth_plot']}"
+                bw_img_response = requests.get(bw_url)
+
+                if rtt_img_response.ok and bw_img_response.ok:
+                    rtt_img = Image.open(io.BytesIO(rtt_img_response.content))
+                    bw_img = Image.open(io.BytesIO(bw_img_response.content))
+
+                    st.subheader("RTT per Hop")
+                    st.image(rtt_img, caption="RTT Plot")
+
+                    st.subheader("Bandwidth per Hop")
+                    st.image(bw_img, caption="Bandwidth Plot")
+                else:
+                    st.error("Failed to fetch one or both plot images.")
+            else:
+                st.error("Failed to load plots.")

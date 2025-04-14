@@ -4,9 +4,14 @@ import subprocess
 import os
 from map import parse_traceroute_file, generate_map
 from network import create_network_visualization, parse_traceroute
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+from network_analysis import load_and_process_data, plot_hop_metrics
+
 
 app = FastAPI()
 IPINFO_TOKEN = "a2b763057ddcfd"
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.post("/run_traceroute")
 async def run_traceroute(
@@ -18,9 +23,9 @@ async def run_traceroute(
 
     # Decide which binary to run based on packet_type
     if packet_type == "udp":
-        cmd = f"sudo ./udp_tool {destination} > {output_file}"
+        cmd = f"sudo ./traceroute_udp {destination} > {output_file}"
     else:  # default to icmp
-        cmd = f"sudo ./icmp_tool {destination} > {output_file}"
+        cmd = f"sudo ./traceroute_icmp {destination} > {output_file}"
 
     result = subprocess.run(cmd, shell=True)
 
@@ -56,3 +61,49 @@ async def get_map():
 async def get_topology():
     return FileResponse("network_topology.html")
 
+# @app.get("/plots")
+# async def get_plots(time_of_day: str = "Morning", protocol: str = "ICMP"):
+#     protocol = protocol.upper()
+#     if protocol not in ["ICMP", "UDP"]:
+#         return JSONResponse(content={"error": "Unsupported protocol"}, status_code=400)
+
+#     csv_file = "traceroute_icmp.csv" if protocol == "ICMP" else "traceroute_udp.csv"
+#     df = load_and_process_data(csv_file)
+    
+#     if df is None:
+#         return JSONResponse(content={"error": "No data available"}, status_code=404)
+
+#     plot_hop_metrics(df, time_of_day, out_dir="static")
+
+#     return {
+#         "rtt_plot": f"/static/rtt_{time_of_day.lower()}.png",
+#         "bandwidth_plot": f"/static/bandwidth_{time_of_day.lower()}.png"
+# }
+@app.get("/plots")
+
+async def get_plots(
+    time_of_day: str = "Morning",
+    protocol: str = "ICMP",
+    destination: str = ""
+):
+
+    protocol = protocol.upper()
+    if protocol not in ["ICMP", "UDP"]:
+        return JSONResponse(content={"error": "Unsupported protocol"}, status_code=400)
+
+    csv_file = "traceroute_icmp.csv" if protocol == "ICMP" else "traceroute_udp.csv"
+    
+    # Now passing destination as target_ip
+    df = load_and_process_data(csv_file, target_ip=destination)
+    
+    if df is None:
+        return JSONResponse(content={"error": f"No data available for IP {destination}"}, status_code=404)
+
+    plot_hop_metrics(df, time_of_day, target_ip=destination, out_dir="static",protocol=protocol)
+
+    ip_safe = destination.replace(".", "_") if destination else "unknown"
+
+    return {
+        "rtt_plot": f"/static/rtt_{time_of_day.lower()}_{ip_safe}_{protocol}.png",
+        "bandwidth_plot": f"/static/bandwidth_{time_of_day.lower()}_{ip_safe}_{protocol}.png"
+}
