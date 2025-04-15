@@ -1,2 +1,4 @@
-google.com 4
-instagram.com 5
+8.8.8.8 4
+google.com 15
+ims.iitgn.ac.in 1
+instagram.com 6

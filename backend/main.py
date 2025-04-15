@@ -4,7 +4,7 @@ import subprocess
 import time
 import os
 from map import parse_traceroute_file, generate_map
-from network import create_network_visualization, parse_traceroute
+from network2 import build_graph, parse_traceroute
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from network_analysis import load_and_process_data, plot_hop_metrics
@@ -24,9 +24,9 @@ async def run_traceroute (
 
     # Decide which binary to run based on packet_type
     if packet_type == "udp":
-        cmd = f"sudo ./traceroute_udp {destination} > {output_file}"
+        cmd = f"sudo ./traceroute_udp {destination}"
     else:  # default to icmp
-        cmd = f"sudo ./traceroute_icmp {destination} > {output_file}"
+        cmd = f"sudo ./traceroute_icmp {destination}"
 
     result = os.system(cmd)
 
@@ -38,7 +38,7 @@ async def run_traceroute (
     generate_map(traceroute_data,IPINFO_TOKEN)
 
     traceroute_data2 = parse_traceroute(output_file)
-    create_network_visualization(traceroute_data2)
+    build_graph(traceroute_data2)
 
     # Read raw output and stats
     with open(output_file, "r") as f:
