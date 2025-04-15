@@ -302,8 +302,8 @@ function highlightFilter(filter) {
                   
 
                   // parsing and collecting nodes and edges from the python
-                  nodes = new vis.DataSet([{"color": "#00ff00", "font": {"color": "white"}, "id": "172.17.144.1", "label": "172.17.144.1", "shape": "dot", "size": 20.903, "title": "\u003cb\u003eIP:\u003c/b\u003e 172.17.144.1\u003cbr\u003e\u003cb\u003eRTT:\u003c/b\u003e 0.903 ms\u003cbr\u003e\u003cb\u003eJitter:\u003c/b\u003e 0.153423 ms\u003cbr\u003e\u003cb\u003eBandwidth:\u003c/b\u003e 2613.333333 Mbps"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "10.7.0.5", "label": "10.7.0.5", "shape": "dot", "size": 22.53333, "title": "\u003cb\u003eIP:\u003c/b\u003e 10.7.0.5\u003cbr\u003e\u003cb\u003eRTT:\u003c/b\u003e 2.53333 ms\u003cbr\u003e\u003cb\u003eJitter:\u003c/b\u003e 0.0483621 ms\u003cbr\u003e\u003cb\u003eBandwidth:\u003c/b\u003e 13.320599 Mbps"}, {"color": "#6AAFFF", "font": {"color": "white"}, "id": "Source", "label": "Source", "shape": "dot", "size": 20, "title": "Source"}]);
-                  edges = new vis.DataSet([{"from": "172.17.144.1", "to": "10.7.0.5"}, {"from": "Source", "to": "172.17.144.1"}]);
+                  nodes = new vis.DataSet([{"color": "#00ff00", "font": {"color": "white"}, "id": "172.17.144.1", "label": "172.17.144.1", "shape": "dot", "size": 20.565667, "title": "IP: 172.17.144.1\nRTT: 0.565667 ms\nJitter: 0.0257725 ms\nBandwidth: 3888.888889 Mbps"}, {"color": "#ffaa00", "font": {"color": "white"}, "id": "10.7.0.5", "label": "10.7.0.5", "shape": "dot", "size": 22.61833, "title": "IP: 10.7.0.5\nRTT: 2.61833 ms\nJitter: 0.528703 ms\nBandwidth: 13.750309 Mbps"}, {"color": "#ff0000", "font": {"color": "white"}, "id": "10.0.137.79", "label": "10.0.137.79", "shape": "dot", "size": 22.241, "title": "IP: 10.0.137.79\nRTT: 2.241 ms\nJitter: 0.0 ms\nBandwidth: 12.27576 Mbps"}, {"color": "#6AAFFF", "font": {"color": "white"}, "id": "Source", "label": "Source", "shape": "dot", "size": 20, "title": "Source"}]);
+                  edges = new vis.DataSet([{"from": "Source", "title": "BW: 3888.888889 Mbps", "to": "172.17.144.1"}, {"from": "172.17.144.1", "title": "BW: 13.750309 Mbps", "to": "10.7.0.5"}, {"color": "white", "from": "10.7.0.5", "title": "BW: 12.27576 Mbps", "to": "10.0.137.79", "width": 6}]);
 
                   nodeColors = {};
                   allNodes = nodes.get({ returnType: "Object" });
@@ -314,7 +314,7 @@ function highlightFilter(filter) {
                   // adding nodes and edges to the graph
                   data = {nodes: nodes, edges: edges};
 
-                  var options = {"nodes": {"borderWidth": 2, "borderWidthSelected": 4, "font": {"size": 15, "face": "Tahoma"}}, "edges": {"color": {"inherit": true}, "smooth": {"type": "continuous", "forceDirection": "none"}}, "physics": {"barnesHut": {"gravitationalConstant": -80000, "centralGravity": 0.3, "springLength": 250}, "minVelocity": 0.75}};
+                  var options = {"nodes": {"borderWidth": 2, "borderWidthSelected": 4, "font": {"size": 20, "face": "Tahoma"}}, "edges": {"color": {"inherit": true}, "smooth": {"type": "continuous", "forceDirection": "none"}}, "physics": {"barnesHut": {"gravitationalConstant": -80000, "centralGravity": 0.3, "springLength": 250}, "minVelocity": 0.75}};
 
                   
 
@@ -371,17 +371,17 @@ function highlightFilter(filter) {
     
             <div style="margin-top: 4px;">
                 <span style="display:inline-block; width:16px; height:16px; background:#ff0000; margin-right:8px; border-radius:3px;"></span>
-                13.32 - 871.32
+                12.28 - 13.25
             </div>
         
             <div style="margin-top: 4px;">
                 <span style="display:inline-block; width:16px; height:16px; background:#ffaa00; margin-right:8px; border-radius:3px;"></span>
-                871.32 - 1729.33
+                13.25 - 1253.79
             </div>
         
             <div style="margin-top: 4px;">
                 <span style="display:inline-block; width:16px; height:16px; background:#00ff00; margin-right:8px; border-radius:3px;"></span>
-                1729.33 - 2613.33
+                1253.79 - 3888.89
             </div>
         </div>
 </body>

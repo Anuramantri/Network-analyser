@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Form
 from fastapi.responses import FileResponse
 import subprocess
+import time
 import os
 from map import parse_traceroute_file, generate_map
 from network import create_network_visualization, parse_traceroute
@@ -14,7 +15,7 @@ IPINFO_TOKEN = "a2b763057ddcfd"
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.post("/run_traceroute")
-async def run_traceroute(
+async def run_traceroute (
     destination: str = Form(...),
     packet_type: str = Form("icmp")  # either "icmp" or "udp"
 ):
@@ -27,9 +28,9 @@ async def run_traceroute(
     else:  # default to icmp
         cmd = f"sudo ./traceroute_icmp {destination} > {output_file}"
 
-    result = subprocess.run(cmd, shell=True)
+    result = os.system(cmd)
 
-    if result.returncode != 0:
+    if result != 0:
         return {"error": "Traceroute tool failed to run."}
 
     # Process traceroute and generate map
