@@ -107,7 +107,7 @@ def build_graph(hops,output_file="network_topology.html"):
         if hop_index > 0:
             main_prev_ip = select_main_node(hops[hop_index - 1])
             for curr_ip in curr_ips:
-                if (main_prev_ip, curr_ip) not in added_edges:
+                if ((main_prev_ip, curr_ip) not in added_edges) and (main_prev_ip != curr_ip):
                     net.add_edge(main_prev_ip, curr_ip)
                     added_edges.add((main_prev_ip, curr_ip))
 

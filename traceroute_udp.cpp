@@ -14,9 +14,9 @@
 #include <algorithm>
 #include <numeric>
 #include <iomanip>
-#include <fstream>
 #include <cmath>
 #include <limits>
+#include <fstream>
 #include <map>
 
 
@@ -25,16 +25,7 @@
 #define DEFAULT_TIMEOUT 3
 #define DEFAULT_PROBES 3
 
-// Structure to store hop information
-struct HopInfo {
-    int hop;
-    std::string ip_address;
-    double rtt;
-    double bandwidth;
-    bool is_bottleneck;
-};
 
-// To store mismatched IP hops (planned vs. actual).
 struct UnexpectedHop {
     int hop_number;
     std::string expected_ip;
@@ -42,24 +33,10 @@ struct UnexpectedHop {
     int probe_number;
 };
 
-// Represents the result of a single probe sent to a specific TTL (hop)
-struct ProbeReply {
-    std::string ip_address;
-    double rtt;
-    std::pair<double, int> bandwidth;
-    bool is_bottleneck;
-};
-
-// Represents all probe replies collected for a given TTL (hop)
-struct HopProbes {
-    int ttl;
-    std::vector<ProbeReply> replies;
-};
-
 // Global vector to store all unexpected hops
 std::vector<UnexpectedHop> unexpected_hops;
 
-// Function to get current timestamp in a readable format
+//function to get time stamp
 std::string get_timestamp() {
     time_t now = time(0);
     struct tm timeinfo;
@@ -74,8 +51,7 @@ std::string get_timestamp() {
     strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &timeinfo);
     return std::string(buffer);
 }
-
-// Function to track and update usage count for destinations
+//function to load and update usage count
 int get_and_update_usage_count(const std::string& destination) {
     std::map<std::string, int> usage_counts;
     std::ifstream usage_file("usage_counts.txt");
@@ -104,26 +80,24 @@ int get_and_update_usage_count(const std::string& destination) {
     return usage_counts[destination];
 }
 
-// Estimates the available bandwidth between source and destination at a specific TTL
-// Returns a pair: <estimated bandwidth in Mbps, number of valid samples>
-std::pair<double, int> estimate_bandwidth(const char *dest_addr, const char *from_addr, int ttl) {
 
-    // Create UDP and ICMP sockets
+
+std::tuple<double, int, double> estimate_bandwidth(const char *dest_addr, const char *from_addr, int ttl) {
     int udp_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     int icmp_sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 
     // Ensure sockets are created successfully
     if (udp_sock < 0 || icmp_sock < 0) {
         std::cerr << "Socket creation failed. Root privileges needed for raw socket." << std::endl;
-        return {-1, 0};
+        return {-1, 0, -1};
     }
 
-    // Set TTL on UDP socket
+    // Set TTL
     if (setsockopt(udp_sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0) {
         std::cerr << "Failed to set TTL." << std::endl;
         close(udp_sock);
         close(icmp_sock);
-        return {-1, 0};
+        return {-1, 0, -1};
     }
 
     // Set a 1-second receive timeout on the ICMP socket
@@ -132,7 +106,7 @@ std::pair<double, int> estimate_bandwidth(const char *dest_addr, const char *fro
     timeout.tv_usec = 0;
     setsockopt(icmp_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
-    // Prepare destination address structure
+    // Destination setup
     sockaddr_in dest;
     memset(&dest, 0, sizeof(dest));
     dest.sin_family = AF_INET;
@@ -140,126 +114,180 @@ std::pair<double, int> estimate_bandwidth(const char *dest_addr, const char *fro
     inet_pton(AF_INET, dest_addr, &dest.sin_addr);
 
     int large_size = 1400;
-    int valid_probes = 0;
+    int num_probes = 10;
     std::vector<double> bandwidths;
+    std::vector<double> intervals;
 
-    for (int i = 0; i < 10; ++i) {
-        char buffer1[large_size], buffer2[large_size];
-        memset(buffer1, 'x', large_size);
-        memset(buffer2, 'y', large_size);
+    int valid_probes = 0;
+    std::string expected_reply_ip = from_addr;
 
-        auto t1 = std::chrono::high_resolution_clock::now();
-        sendto(udp_sock, buffer1, large_size, 0, (sockaddr*)&dest, sizeof(dest));
-        auto t2 = std::chrono::high_resolution_clock::now();
-        sendto(udp_sock, buffer2, large_size, 0, (sockaddr*)&dest, sizeof(dest));
+    for (int i = 0; i < num_probes; i++) {
+        char packet1[large_size] = {0};
+        char packet2[large_size] = {0};
 
-        char recv_buf[MAX_PACKET_SIZE];
-        sockaddr_in from;
-        socklen_t from_len = sizeof(from);
+        if (sendto(udp_sock, packet1, large_size, 0, (struct sockaddr *)&dest, sizeof(dest)) < 0) continue;
+        if (sendto(udp_sock, packet2, large_size, 0, (struct sockaddr *)&dest, sizeof(dest)) < 0) continue;
 
-        int recv_count = 0;
-        std::chrono::high_resolution_clock::time_point icmp_time1, icmp_time2;
+        char recv_buffer1[MAX_PACKET_SIZE], recv_buffer2[MAX_PACKET_SIZE];
+        struct sockaddr_in from1, from2;
+        socklen_t from_len1 = sizeof(from1), from_len2 = sizeof(from2);
 
-        while (recv_count < 2) {
-            int bytes = recvfrom(icmp_sock, recv_buf, sizeof(recv_buf), 0, (sockaddr*)&from, &from_len);
-            if (bytes > 0) {
-                if (recv_count == 0) {
-                    icmp_time1 = std::chrono::high_resolution_clock::now();
-                } else {
-                    icmp_time2 = std::chrono::high_resolution_clock::now();
-                }
-                recv_count++;
-            } else {
-                break;
+        fd_set read_set;
+        FD_ZERO(&read_set);
+        FD_SET(icmp_sock, &read_set);
+
+        struct timeval timeout;
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
+        auto start_time = std::chrono::high_resolution_clock::now();
+
+        if (select(icmp_sock + 1, &read_set, NULL, NULL, &timeout) <= 0) continue;
+        if (recvfrom(icmp_sock, recv_buffer1, sizeof(recv_buffer1), 0, (struct sockaddr *)&from1, &from_len1) < 0) continue;
+
+        auto first_arrival = std::chrono::high_resolution_clock::now();
+
+        FD_ZERO(&read_set);
+        FD_SET(icmp_sock, &read_set);
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
+        if (select(icmp_sock + 1, &read_set, NULL, NULL, &timeout) <= 0) continue;
+        if (recvfrom(icmp_sock, recv_buffer2, sizeof(recv_buffer2), 0, (struct sockaddr *)&from2, &from_len2) < 0) continue;
+
+        auto second_arrival = std::chrono::high_resolution_clock::now();
+
+        // Check if both replies came from expected address
+        char buffer1[INET_ADDRSTRLEN], buffer2[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &from1.sin_addr, buffer1, sizeof(buffer1));
+        inet_ntop(AF_INET, &from2.sin_addr, buffer2, sizeof(buffer2));
+
+        std::string reply_ip1 = buffer1;
+        std::string reply_ip2 = buffer2;
+
+        if (reply_ip1 != expected_reply_ip || reply_ip2 != expected_reply_ip) {
+            if (reply_ip1 != expected_reply_ip) {
+                unexpected_hops.push_back({
+                    ttl, expected_reply_ip, reply_ip1, i * 2 + 1
+                });
             }
+            if (reply_ip2 != expected_reply_ip) {
+                unexpected_hops.push_back({
+                    ttl, expected_reply_ip, reply_ip2, i * 2 + 2
+                });
+            }
+            continue;
         }
 
-        if (recv_count == 2) {
-            auto interval_us = std::chrono::duration_cast<std::chrono::microseconds>(icmp_time2 - icmp_time1).count();
-            if (interval_us > 0) {
-                double bw_mbps = (large_size * 8.0) / interval_us;
-                bandwidths.push_back(bw_mbps);
-                valid_probes++;
-            }
-        }
+        auto interval = std::chrono::duration_cast<std::chrono::microseconds>(
+            second_arrival - first_arrival).count();
+
+        if (interval <= 0) continue;
+
+        intervals.push_back(interval);
+
+        double bw = (large_size * 8.0) / interval;
+        bandwidths.push_back(bw);
+        valid_probes++;
     }
 
     close(udp_sock);
     close(icmp_sock);
 
+    double jitter = -1;
+
+    if (intervals.size() >= 2) {
+        double sum_diff = 0.0;
+        for (size_t i = 1; i < intervals.size(); ++i) {
+            sum_diff += std::abs(intervals[i] - intervals[i - 1]);
+        }
+        jitter = sum_diff / (intervals.size() - 1);
+    }
+
+    jitter /= 1000.0; // in milliseconds
+
     double final_bw = -1;
     if (bandwidths.size() >= 3) {
         std::sort(bandwidths.begin(), bandwidths.end());
-        size_t n = bandwidths.size();
-        final_bw = (n % 2 == 0) ? (bandwidths[n/2 - 1] + bandwidths[n/2]) / 2.0 : bandwidths[n/2];
+        if (bandwidths.size() % 2 == 0) {
+            final_bw = (bandwidths[bandwidths.size()/2 - 1] + bandwidths[bandwidths.size()/2]) / 2.0;
+        } else {
+            final_bw = bandwidths[bandwidths.size()/2];
+        }
     } else if (!bandwidths.empty()) {
         final_bw = std::accumulate(bandwidths.begin(), bandwidths.end(), 0.0) / bandwidths.size();
     }
 
-    return {final_bw, valid_probes};
+    return {final_bw, valid_probes, jitter};
 }
 
-// Traceroute function that sends UDP packets with increasing TTL values to map the path to the destination.
-// It also estimates bandwidth and detects bottlenecks at each hop.
+struct ProbeReply {
+    std::string ip_address;
+    double rtt;
+    double bandwidth;
+    int num_probes;
+    double jitter;
+};
+
+struct HopProbes {
+    int ttl;
+    std::vector<ProbeReply> replies;
+};
+
 std::vector<HopProbes> traceroute(const char *destination, int max_hops, int timeout, int probes_per_hop = DEFAULT_PROBES) {
     std::vector<HopProbes> all_hops;
 
-    // Resolve destination hostname to IP address
     struct hostent *host = gethostbyname(destination);
     if (!host) {
         std::cerr << "Unknown host: " << destination << std::endl;
         return all_hops;
     }
-    // Convert IP to string
-    char *temp_addr = inet_ntoa(*(struct in_addr *)host->h_addr);
-    char dest_addr[INET_ADDRSTRLEN];
-    strcpy(dest_addr, temp_addr);
+    char *dest_addr = inet_ntoa(*(struct in_addr *)host->h_addr);
 
-    std::cout << "Traceroute to " << destination << " (" << dest_addr << "), " << max_hops << " hops max" << std::endl;
-    std::cout << std::string(70, '-') << std::endl;
     bool reached = false;
-    // Iterate over TTL values from 1 to max_hops
     for (int ttl = 1; ttl <= max_hops; ttl++) {
         HopProbes hop;
         hop.ttl = ttl;
-        std::vector<double> rtts;
-        std::vector<double> bws;
 
-        std::cout << "Hop " << ttl << ":" << std::endl;
-
-        // Send multiple probes per hop
         for (int probe = 0; probe < probes_per_hop; probe++) {
-            int udp_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-            int icmp_sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-            if (udp_sock < 0 || icmp_sock < 0) {
-                std::cerr << "Socket creation failed." << std::endl;
+            // Create a UDP socket for sending
+            int send_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+            if (send_sock < 0) {
+                perror("send socket");
                 continue;
             }
 
-            // Set TTL on UDP socket
-            setsockopt(udp_sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
+            // Create raw socket to receive ICMP
+            int recv_sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+            if (recv_sock < 0) {
+                perror("recv socket");
+                close(send_sock);
+                continue;
+            }
 
-            // Set timeout on ICMP socket
+            // Set TTL for outgoing UDP packet
+            setsockopt(send_sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
+
             struct timeval tv = {timeout, 0};
-            setsockopt(icmp_sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+            setsockopt(recv_sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
-            // Set up destination address
+            // Setup destination
             struct sockaddr_in dest;
             memset(&dest, 0, sizeof(dest));
             dest.sin_family = AF_INET;
-            dest.sin_port = htons(33434 + ttl);  // Unique port per hop
-            inet_pton(AF_INET, dest_addr, &dest.sin_addr);
+            dest.sin_addr.s_addr = inet_addr(dest_addr);
+            dest.sin_port = htons(33434 + ttl + probe);  // unique high port
 
             // Send UDP packet
-            char send_buffer[] = "traceroute_probe";
             auto start = std::chrono::high_resolution_clock::now();
-            sendto(udp_sock, send_buffer, sizeof(send_buffer), 0, (struct sockaddr *)&dest, sizeof(dest));
+            sendto(send_sock, "Hello", 5, 0, (struct sockaddr *)&dest, sizeof(dest));
 
-            // Receive ICMP reply
+            // Wait for ICMP reply
             char recv_buffer[MAX_PACKET_SIZE];
             struct sockaddr_in from;
             socklen_t from_len = sizeof(from);
-            int bytes = recvfrom(icmp_sock, recv_buffer, sizeof(recv_buffer), 0, (struct sockaddr *)&from, &from_len);
+
+            int bytes = recvfrom(recv_sock, recv_buffer, sizeof(recv_buffer), 0, (struct sockaddr *)&from, &from_len);
             auto end = std::chrono::high_resolution_clock::now();
 
             if (bytes > 0) {
@@ -267,79 +295,66 @@ std::vector<HopProbes> traceroute(const char *destination, int max_hops, int tim
                 inet_ntop(AF_INET, &from.sin_addr, from_addr, sizeof(from_addr));
 
                 double rtt = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
-                std::pair<double, int> bw = estimate_bandwidth(dest_addr, from_addr, ttl);
+                std::tuple<double, int, double> bw = estimate_bandwidth(dest_addr, from_addr, ttl);
 
                 ProbeReply reply = {
                     .ip_address = from_addr,
                     .rtt = rtt,
-                    .bandwidth = bw,
-                    .is_bottleneck = (bw.first > 0 && bw.first < 10)
+                    .bandwidth = std::get<0>(bw),
+                    .num_probes = std::get<1>(bw),
+                    .jitter = std::get<2>(bw)
                 };
 
                 hop.replies.push_back(reply);
-                rtts.push_back(rtt);
-                if (bw.first > 0) bws.push_back(bw.first);
 
-                std::cout << "  Probe " << (probe + 1) << ": " << from_addr
-                          << " | RTT: " << rtt << " ms"
-                          << " | BW: " << (bw.first > 0 ? std::to_string(bw.first) + " Mbps" : "N/A")
-                          << " | Successful probes(/10): " << bw.second;
-
-                if (reply.is_bottleneck)
-                    std::cout << "  [!] Bottleneck";
-                std::cout << std::endl;
-
-                // Stop if we reached the destination
-                if (strcmp(from_addr, dest_addr) == 0) {
+                if (std::string(from_addr) == std::string(dest_addr)) {
                     reached = true;
                 }
-
-            } else {
-                std::cout << "  Probe " << (probe + 1) << ": * Request timed out" << std::endl;
             }
 
-            close(udp_sock);
-            close(icmp_sock);
-        }
-
-        // --- Per-hop stats ---
-        if (!rtts.empty()) {
-            double rtt_avg = std::accumulate(rtts.begin(), rtts.end(), 0.0) / rtts.size();
-            double rtt_jitter = 0.0;
-            for (auto rtt : rtts) rtt_jitter += (rtt - rtt_avg) * (rtt - rtt_avg);
-            rtt_jitter = std::sqrt(rtt_jitter / rtts.size());
-
-            double bw_avg = !bws.empty() ? std::accumulate(bws.begin(), bws.end(), 0.0) / bws.size() : -1;
-
-            std::cout << "  [Stats] Avg RTT: " << rtt_avg << " ms | Jitter: " << rtt_jitter << " ms"
-                      << " | Avg BW: " << (bw_avg > 0 ? std::to_string(bw_avg) + " Mbps" : "N/A") << std::endl;
+            close(send_sock);
+            close(recv_sock);
         }
 
         all_hops.push_back(hop);
-        std::cout << std::string(70, '-') << std::endl;
-        if(reached) {
-            std::cout << "Destination reached at hop " << ttl << std::endl;
-            break;
-        }
+        if (reached) break;
     }
+
     return all_hops;
 }
 
 
-std::string calculate_network_stats(const std::vector<HopProbes>& hops) {
-    std::ostringstream stats;
+
+void calculate_network_stats(const std::vector<HopProbes>& hops) {
+    std::ofstream stats("stats.txt");
+    if (!stats) {
+        std::cerr << "Error: Could not open stats file." << std::endl;
+        return;
+    }
 
     stats << "Total Hops: " << hops.size() << "\n";
 
     std::vector<double> all_rtts;
     std::vector<double> all_bandwidths;
+    std::vector<double> all_jitter;
+    double min_bandwidth = std::numeric_limits<double>::max();
+    int bottleneck_hop_num = -1;
+    std::string bottleneck_hop_ip = "N/A";
 
     for (const auto& hop : hops) {
         for (const auto& reply : hop.replies) {
             if (reply.rtt > 0)
                 all_rtts.push_back(reply.rtt);
-            if (reply.bandwidth.first > 0)
-                all_bandwidths.push_back(reply.bandwidth.first);
+            if (reply.bandwidth > 0){
+                all_bandwidths.push_back(reply.bandwidth);
+                if(reply.bandwidth < min_bandwidth) {
+                    min_bandwidth = reply.bandwidth;
+                    bottleneck_hop_num = hop.ttl;
+                    bottleneck_hop_ip = reply.ip_address;
+                }
+            }
+            if(reply.jitter > 0)
+                all_jitter.push_back(reply.jitter);
         }
     }
 
@@ -358,38 +373,42 @@ std::string calculate_network_stats(const std::vector<HopProbes>& hops) {
 
         stats << "Average Bandwidth: " << avg_bw << " Mbps\n";
         stats << "Effective Bandwidth (Bottleneck): " << min_bw << " Mbps\n";
+        if (min_bandwidth != std::numeric_limits<double>::max()) {
+            stats << "Instantaneous Bottleneck Link: Hop " << bottleneck_hop_num << " (" << bottleneck_hop_ip 
+                      << ") with Effective Bandwidth: " << min_bandwidth << " Mbps" << std::endl;
+        }
     } else {
         stats << "No valid Bandwidth data.\n";
     }
-
-    return stats.str();
-}
-
-void print_unexpected_hops(std::ostream& out) {
-    if (unexpected_hops.empty()) {
-        out << "No unexpected hops detected." << std::endl;
-        return;
+    if(!all_jitter.empty()) {
+        double total_jitter = std::accumulate(all_jitter.begin(), all_jitter.end(), 0.0);
+        double avg_jitter = total_jitter / all_jitter.size();
+        stats << "Average Jitter: " << avg_jitter << " ms\n";
+    } else {
+        stats << "No valid Jitter data.\n";
     }
 
-    out << "Unexpected IPs encountered during traceroute:" << std::endl;
-    out << std::string(60, '-') << std::endl;
-    out << "Hop\tExpected IP\t\tActual IP\t\tProbe" << std::endl;
-    out << std::string(60, '-') << std::endl;
-
-    for (const auto& hop : unexpected_hops) {
-        out << hop.hop_number << "\t"
-            << hop.expected_ip << "\t\t"
-            << hop.actual_ip << "\t\t"
-            << hop.probe_number << std::endl;
-    }
+    stats.close();
 }
 
+// void print_unexpected_hops(std::ostream& out) {
+//     if (unexpected_hops.empty()) {
+//         out << "No unexpected hops detected." << std::endl;
+//         return;
+//     }
 
-// Assume the following symbols are declared elsewhere:
-// - DEFAULT_MAX_HOPS, DEFAULT_TIMEOUT, DEFAULT_PROBES
-// - struct Reply { std::string ip_address; double rtt; std::pair<double,int> bandwidth; };
-// - struct HopProbes { int ttl; std::vector<Reply> replies; };
-// - Functions: get_and_update_usage_count(), get_timestamp(), traceroute(), print_unexpected_hops()
+//     out << "Unexpected IPs encountered during traceroute:" << std::endl;
+//     out << std::string(60, '-') << std::endl;
+//     out << "Hop\tExpected IP\t\tActual IP\t\tProbe" << std::endl;
+//     out << std::string(60, '-') << std::endl;
+
+//     for (const auto& hop : unexpected_hops) {
+//         out << hop.hop_number << "\t"
+//             << hop.expected_ip << "\t\t"
+//             << hop.actual_ip << "\t\t"
+//             << hop.probe_number << std::endl;
+//     }
+// }
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -412,18 +431,15 @@ int main(int argc, char *argv[]) {
     std::string hostname = destination;
     std::string dest_ip = inet_ntoa(*(struct in_addr *)host->h_addr);
     
-    // Get usage count and current timestamp
     int usage_count = get_and_update_usage_count(hostname);
     std::string timestamp = get_timestamp();
     
-    // Run the traceroute and get hops information
     std::vector<HopProbes> hops = traceroute(destination, max_hops, timeout, probes);
     
-    // Open the output files
-    std::ofstream text_file("traceroute_output.txt");
-    std::ofstream csv_file("traceroute_udp.csv", std::ios::app); // Append mode
+    std::ofstream output("traceroute_output.txt");
+    std::ofstream csv_file("traceroute_icmp.csv", std::ios::app); 
     
-    if (!text_file || !csv_file) {
+    if (!output || !csv_file) {
         std::cerr << "Error: Could not open output files." << std::endl;
         return 1;
     }
@@ -434,87 +450,58 @@ int main(int argc, char *argv[]) {
         csv_file << "usage_count,destination_ip,hostname,timestamp,hop,hop_ip,rtt_ms,bandwidth_mbps" << std::endl;
     }
     
-    std::ostringstream output;
-    // Variables for overall statistics
-    std::vector<double> all_rtts;
-    std::vector<double> all_bandwidths;
-    double min_bandwidth = std::numeric_limits<double>::max();
-    std::string bottleneck_hop_ip;  // for per-reply (instantaneous) bottleneck
+    
+    std::string bottleneck_hop_ip;
     int bottleneck_hop_num = 0;
     bool destination_reached = false;
     int final_hop = 0;
-
-    // For per-hop average bottleneck reporting, store (hop_number, ip, avg_bw) for each hop
     std::vector<std::tuple<int, std::string, double>> hop_avg_bw;
-
-    // Process each hop, write once to the output stream and CSV file
+    
+    output << "Traceroute to " << destination << " (" << dest_ip << "), " << max_hops << " hops max" << "\n";
+    output << std::string(70, '-') << "\n";
+    
+    // Process each hop, write once to the text and CSV file
     for (const auto& hop : hops) {
-        output << "Hop " << hop.ttl << ":" << std::endl;
+        output << "Hop " << hop.ttl << ":" << "\n";
         final_hop = hop.ttl;
-
+    
         std::vector<double> hop_rtts;
         std::vector<double> hop_bws;
         std::string hop_ip;
-
+    
         int probe_count = 0;
         for (const auto& reply : hop.replies) {
             probe_count++;
             // If no response for this probe, print timeout message
             if (reply.ip_address.empty()) {
-                output << "  Probe " << probe_count << ": * Request timed out" << std::endl;
+                output << "  Probe " << probe_count << ": * Request timed out" << "\n";
                 continue;
             }
-
-            // Use the first valid IP address for the hop
+    
+            // Use the first valid IP address for the hop // CHANGE THIS 
             if (hop_ip.empty())
                 hop_ip = reply.ip_address;
-
+    
             if (reply.rtt > 0) {
                 hop_rtts.push_back(reply.rtt);
-                all_rtts.push_back(reply.rtt);
             }
-
-            if (reply.bandwidth.first > 0) {
-                hop_bws.push_back(reply.bandwidth.first);
-                all_bandwidths.push_back(reply.bandwidth.first);
-
-                // Check for instantaneous (per-reply) bottleneck
-                if (reply.bandwidth.first < min_bandwidth) {
-                    min_bandwidth = reply.bandwidth.first;
-                    bottleneck_hop_ip = reply.ip_address;
-                    bottleneck_hop_num = hop.ttl;
-                }
-            }
-
+    
+    
             output << "  Probe " << probe_count << ": " << reply.ip_address 
                    << " | RTT: " << reply.rtt << " ms"
-                   << " | BW: " << (reply.bandwidth.first > 0 ? std::to_string(reply.bandwidth.first) + " Mbps" : "N/A")
-                   << " | Successful probes(/10):" << reply.bandwidth.second << std::endl;
-
+                   << " | BW: " << (reply.bandwidth > 0 ? std::to_string(reply.bandwidth) + " Mbps" : "N/A")
+                   << " | Jitter: " << (reply.jitter > 0 ? std::to_string(reply.jitter) + " ms" : "N/A")
+                   << " | Successful probes(/10):" << reply.num_probes << "\n";
+    
             // Check if the destination is reached
             if (reply.ip_address == dest_ip)
                 destination_reached = true;
         }
 
-        // Print hop statistics if RTT data exists
-        if (!hop_rtts.empty()) {
-            double avg_rtt = std::accumulate(hop_rtts.begin(), hop_rtts.end(), 0.0) / hop_rtts.size();
-            double sum_squared_diff = 0.0;
-            for (const auto& rtt : hop_rtts) {
-                double diff = rtt - avg_rtt;
-                sum_squared_diff += diff * diff;
-            }
-            double jitter = std::sqrt(sum_squared_diff / hop_rtts.size());
-            double avg_bw = hop_bws.empty() ? 0.0 : std::accumulate(hop_bws.begin(), hop_bws.end(), 0.0) / hop_bws.size();
-            output << "  [Stats] Avg RTT: " << avg_rtt << " ms | Jitter: " << jitter 
-                   << " ms | Avg BW: " << (hop_bws.empty() ? "N/A" : std::to_string(avg_bw) + " Mbps") << std::endl;
-
-            // Save per-hop average if valid bandwidth exists
-            if (!hop_bws.empty()) {
-                hop_avg_bw.push_back(std::make_tuple(hop.ttl, hop_ip, avg_bw));
-            }
+        for (int i = probe_count + 1; i <= 3; ++i) {
+            output << "  Probe " << i << ": * Request timed out" << "\n";
         }
-
+        
         // Write hop data to CSV if valid IP exists
         if (!hop_ip.empty()) {
             double avg_rtt = hop_rtts.empty() ? 0.0 : std::accumulate(hop_rtts.begin(), hop_rtts.end(), 0.0) / hop_rtts.size();
@@ -528,77 +515,23 @@ int main(int argc, char *argv[]) {
                      << (!hop_rtts.empty() ? std::to_string(avg_rtt) : "N/A") << ","
                      << (!hop_bws.empty() ? std::to_string(avg_bw) : "N/A") << std::endl;
         }
-
-        output << std::string(70, '-') << std::endl;
+    
+        output << std::string(70, '-') << "\n";
     }
-
+    
     if (destination_reached) {
-        output << "Destination reached at hop " << final_hop << "." << std::endl;
+        output << "Destination reached at hop " << final_hop << "." << "\n";
     } else {
-        output << "Traceroute completed with " << hops.size() << " hops." << std::endl;
+        output << "Traceroute completed with " << hops.size() << " hops." << "\n";
     }
+    
+    // print_unexpected_hops(output);
 
-    // Write the consolidated output to text file
-    std::string consolidated_output = output.str();
-    text_file << consolidated_output;
-    print_unexpected_hops(text_file);
-
-    // Also optionally print to the console
-    print_unexpected_hops(std::cout);
-    text_file.close();
+    output.close();
     csv_file.close();
-
-    // Calculate overall averages
-    double overall_avg_rtt = all_rtts.empty() ? 0.0 : std::accumulate(all_rtts.begin(), all_rtts.end(), 0.0) / all_rtts.size();
-    double overall_avg_bw = all_bandwidths.empty() ? 0.0 : std::accumulate(all_bandwidths.begin(), all_bandwidths.end(), 0.0) / all_bandwidths.size();
-
-    // Determine per-hop average bottleneck: hop with the lowest average BW among hops that have valid avg BW
-    double min_avg_bw = std::numeric_limits<double>::max();
-    int bottleneck_avg_hop = -1;
-    std::string bottleneck_avg_ip;
-    for (const auto& tup : hop_avg_bw) {
-        int hop_num;
-        std::string ip;
-        double avg_bw;
-        std::tie(hop_num, ip, avg_bw) = tup;
-        if (avg_bw < min_avg_bw) {
-            min_avg_bw = avg_bw;
-            bottleneck_avg_hop = hop_num;
-            bottleneck_avg_ip = ip;
-        }
-    }
-
-    std::ofstream stat_file("stats.txt");
-    if (stat_file) {
-        stat_file << "Total Hops: " << hops.size() << std::endl;
-        if (!all_rtts.empty()) {
-            stat_file << "Average RTT: " << overall_avg_rtt << " ms" << std::endl;
-        }
-        if (!all_bandwidths.empty()) {
-            stat_file << "Average Bandwidth: " << overall_avg_bw << " Mbps" << std::endl;
-        }
-        // Instantaneous (per-probe) bottleneck details
-        if (min_bandwidth != std::numeric_limits<double>::max()) {
-            stat_file << "Instantaneous Bottleneck Link: Hop " << bottleneck_hop_num << " (" << bottleneck_hop_ip 
-                      << ") with Effective Bandwidth: " << min_bandwidth << " Mbps" << std::endl;
-        }
-        // Per-hop average bottleneck details
-        if (bottleneck_avg_hop != -1) {
-            stat_file << "Bottleneck Based on Average per Hop: Hop " << bottleneck_avg_hop << " (" << bottleneck_avg_ip 
-                      << ") with Average Bandwidth: " << min_avg_bw << " Mbps" << std::endl;
-        }
-        stat_file.close();
-    }
-
     
-    // If print_unexpected_hops() prints additional hop details that duplicate
-    // information, consider removing or modifying it.
-    // Write unexpected hops info to the same file
-   
-    
-    std::cout << "Results saved to traceroute_output.txt, traceroute_udp.csv, and stats.txt" << std::endl;
+    std::cout << "Results saved to traceroute_output.txt, traceroute_icmp.csv, and stats.txt" << std::endl;
     
     return 0;
 }
-
 

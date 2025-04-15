@@ -1,7 +1,5 @@
 from fastapi import FastAPI, Form
 from fastapi.responses import FileResponse
-import subprocess
-import time
 import os
 from map import parse_traceroute_file, generate_map
 from network2 import build_graph, parse_traceroute

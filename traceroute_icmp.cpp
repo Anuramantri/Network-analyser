@@ -548,7 +548,7 @@ int main(int argc, char *argv[]) {
             output << "  Probe " << probe_count << ": " << reply.ip_address 
                    << " | RTT: " << reply.rtt << " ms"
                    << " | BW: " << (reply.bandwidth > 0 ? std::to_string(reply.bandwidth) + " Mbps" : "N/A")
-                   << " | Jitter: " << (reply.bandwidth > 0 ? std::to_string(reply.bandwidth) + " ms" : "N/A")
+                   << " | Jitter: " << (reply.jitter > 0 ? std::to_string(reply.jitter) + " ms" : "N/A")
                    << " | Successful probes(/10):" << reply.num_probes << "\n";
     
             // Check if the destination is reached
@@ -556,6 +556,9 @@ int main(int argc, char *argv[]) {
                 destination_reached = true;
         }
 
+        for (int i = probe_count + 1; i <= 3; ++i) {
+            output << "  Probe " << i << ": * Request timed out" << "\n";
+        }
         // Write hop data to CSV if valid IP exists
         if (!hop_ip.empty()) {
             double avg_rtt = hop_rtts.empty() ? 0.0 : std::accumulate(hop_rtts.begin(), hop_rtts.end(), 0.0) / hop_rtts.size();
