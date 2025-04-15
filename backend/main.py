@@ -11,7 +11,7 @@ from network_analysis import load_and_process_data, plot_hop_metrics
 
 app = FastAPI()
 IPINFO_TOKEN = "a2b763057ddcfd"
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 @app.post("/run_traceroute")
 async def run_traceroute(
@@ -49,6 +49,7 @@ async def run_traceroute(
     return {
         "message": "Traceroute completed",
         "map_url": "/map",
+        "network_topology_url": "/network_topology",
         "traceroute_output": traceroute_text,
         "stats": stats
     }
@@ -95,7 +96,7 @@ async def get_plots(
     
     # Now passing destination as target_ip
     df = load_and_process_data(csv_file, target_ip=destination)
-    
+    app.mount("/static", StaticFiles(directory="static"), name="static")
     if df is None:
         return JSONResponse(content={"error": f"No data available for IP {destination}"}, status_code=404)
 

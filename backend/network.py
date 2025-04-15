@@ -117,7 +117,7 @@ def create_network_visualization(traceroute_data):
         nodes.append(ip)
         G.add_node(
             ip,
-            title=f"<b>IP:</b> {ip}<br><b>RTT:</b> {rtt} ms<br><b>Jitter:</b> {jitter} ms<br><b>Bandwidth:</b> {bw} Mbps",
+            title=f"IP: {ip} \n RTT: {rtt} ms \\nJitter: {jitter} ms \\nBandwidth: {bw} Mbps",
             rtt=rtt,
             jitter=jitter,
             bandwidth=bw
@@ -131,34 +131,26 @@ def create_network_visualization(traceroute_data):
                   height="750px", width="100%")
 
     net.set_options("""
-    var options = {
-      "nodes": {
+    {
+    "nodes": {
         "borderWidth": 2,
         "borderWidthSelected": 4,
         "font": {
-          "size": 15,
-          "face": "Tahoma"
+        "size": 15,
+        "face": "Tahoma"
         }
-      },
-      "edges": {
+    },
+    "edges": {
         "color": {
-          "inherit": true
-        },
-        "smooth": {
-          "type": "continuous",
-          "forceDirection": "none"
+        "inherit": true
         }
-      },
-      "physics": {
-        "barnesHut": {
-          "gravitationalConstant": -80000,
-          "centralGravity": 0.3,
-          "springLength": 250
-        },
-        "minVelocity": 0.75
-      }
+    },
+    "physics": {
+        "enabled": false
+    }
     }
     """)
+
 
     bw_values = [attrs['bandwidth'] for _, attrs in G.nodes(data=True) if 'bandwidth' in attrs]
     if len(bw_values) > 0:
@@ -174,13 +166,13 @@ def create_network_visualization(traceroute_data):
             
             # Assign color based on which bin the bandwidth falls into
             if bw <= bins[1]:
-                color = "#ff0000"   # low bandwidth
+                color = colors[0]  # low
             elif bw <= bins[2]:
-                color = "#ffaa00"   # medium
+                color = colors[1]  # medium
             else:
-                color = "#00ff00"   # high
+                color = colors[2]   # high
 
-            size = min(20 + attrs['rtt'], 60)
+            size = 20
             net.add_node(
                 node,
                 label=node,

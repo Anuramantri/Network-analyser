@@ -74,9 +74,6 @@ def generate_map(traceroute_data, token):
     popup_html = f"""
     <div style="font-family: Arial; font-size: 14px; color: black; padding: 8px; width: 220px;">
     <b>IP:</b> {ip}<br>
-    <b>RTT:</b> {rtt} ms<br>
-    <b>Jitter:</b> {jitter} ms<br>
-    <b>Bandwidth:</b> {bw} Mbps
     </div>
     """
     test_popup_html = "<b>HELLO</b><br>This should be on a new line."

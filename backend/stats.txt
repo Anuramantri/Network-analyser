@@ -1,0 +1,4 @@
+Total Hops: 13
+Average RTT: 10.1201 ms
+Average Bandwidth: 3664.71 Mbps
+Effective Bandwidth (Bottleneck): 2800 Mbps
