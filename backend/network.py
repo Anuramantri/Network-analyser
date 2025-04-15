@@ -106,26 +106,30 @@ def add_legend_to_html(html_file, bins, colors):
     with open(html_file, "w", encoding="utf-8") as f:
         f.write(html)
 
-
 def create_network_visualization(traceroute_data):
     G = nx.DiGraph()
     nodes = ["Source"]
-    bandwidths = {}
     traceroute_data.sort()
 
+    # Create nodes with attributes.
     for hop, ip, rtt, jitter, bw in traceroute_data:
         nodes.append(ip)
         G.add_node(
             ip,
-            title=f"IP: {ip} \n RTT: {rtt} ms \\nJitter: {jitter} ms \\nBandwidth: {bw} Mbps",
+            title=f"IP: {ip}\nRTT: {rtt} ms\nJitter: {jitter} ms\nBandwidth: {bw} Mbps",
             rtt=rtt,
             jitter=jitter,
             bandwidth=bw
         )
 
+    # Add a "Source" node (if needed, customize its attributes)
+    G.add_node("Source", title="Source", rtt=0, jitter=0, bandwidth=None)
+
+    # Add directed edges between consecutive hops
     for i in range(len(nodes) - 1):
         G.add_edge(nodes[i], nodes[i + 1])
 
+    # Create a Pyvis network.
     net = Network(notebook=False, cdn_resources="in_line",
                   bgcolor="#222222", font_color="white",
                   height="750px", width="100%")
@@ -136,8 +140,8 @@ def create_network_visualization(traceroute_data):
         "borderWidth": 2,
         "borderWidthSelected": 4,
         "font": {
-        "size": 15,
-        "face": "Tahoma"
+          "size": 20,
+          "face": "Tahoma"
         }
     },
     "edges": {
@@ -151,20 +155,20 @@ def create_network_visualization(traceroute_data):
     }
     """)
 
-
-    bw_values = [attrs['bandwidth'] for _, attrs in G.nodes(data=True) if 'bandwidth' in attrs]
-    if len(bw_values) > 0:
+    # Determine bandwidth bins for coloring nodes.
+    bw_values = [attrs['bandwidth'] for _, attrs in G.nodes(data=True) if attrs.get('bandwidth') is not None]
+    if bw_values:
         bins = np.quantile(bw_values, [0, 0.33, 0.66, 1.0])
     else:
         bins = [0, 3000, 7000, 10000]  # fallback default
 
     colors = ["#ff0000", "#ffaa00", "#00ff00"]
-
+    
+    # Add nodes to the Pyvis network with color based on bandwidth.
     for node, attrs in G.nodes(data=True):
-        if 'bandwidth' in attrs:
+        if attrs.get('bandwidth') is not None:
             bw = attrs['bandwidth']
-            
-            # Assign color based on which bin the bandwidth falls into
+            # Determine color based on the bandwidth bin.
             if bw <= bins[1]:
                 color = colors[0]  # low
             elif bw <= bins[2]:
@@ -181,13 +185,36 @@ def create_network_visualization(traceroute_data):
                 size=size
             )
         else:
+            # Define the source node.
             net.add_node(node, label=node, title=node, color="#6AAFFF", size=20)
 
+    # Compute edge attributes: Use the bandwidth of the destination node.
+    edge_data = []
+    for i in range(1, len(nodes)):
+        target = nodes[i]
+        bw = G.nodes[target].get("bandwidth")
+        if bw is not None:
+            edge_data.append(((nodes[i-1], nodes[i]), bw))
+    
+    # Identify the bottleneck edge (minimum bandwidth)
+    if edge_data:
+        bottleneck_edge = min(edge_data, key=lambda x: x[1])[0]
+    else:
+        bottleneck_edge = None
 
-    for edge in G.edges():
-        net.add_edge(edge[0], edge[1])
-
-
+    # Add edges with the title attribute showing bandwidth and special styling for the bottleneck edge.
+    for i in range(1, len(nodes)):
+        source = nodes[i-1]
+        target = nodes[i]
+        # Retrieve bandwidth from the destination node.
+        bw = G.nodes[target].get("bandwidth", "N/A")
+        title_text = f"BW: {bw} Mbps"
+        if bottleneck_edge is not None and (source, target) == bottleneck_edge:
+            # Bottleneck edge: highlight in white with thicker width.
+            net.add_edge(source, target, title=title_text, color="white", width=6)
+        else:
+            net.add_edge(source, target, title=title_text)
+    
     html_file = "network_topology.html"
     net.save_graph(html_file)
 
@@ -195,58 +222,3 @@ def create_network_visualization(traceroute_data):
     add_legend_to_html(html_file, bins, colors)
 
     return html_file
-
-
-#     net.set_options("""
-# var options = {
-#   "nodes": {
-#     "borderWidth": 2,
-#     "borderWidthSelected": 4,
-#     "font": {
-#       "size": 15,
-#       "face": "Tahoma"
-#     }
-#   },
-#   "edges": {
-#     "color": {
-#       "inherit": true
-#     },
-#     "smooth": {
-#       "enabled": true,
-#       "type": "dynamic"
-#     }
-#   },
-#   "physics": {
-#     "enabled": true,
-#     "barnesHut": {
-#       "gravitationalConstant": -20000,
-#       "centralGravity": 0.3,
-#       "springLength": 200,
-#       "springConstant": 0.05,
-#       "damping": 0.1,
-#       "avoidOverlap": 1
-#     },
-#     "minVelocity": 0.5,
-#     "solver": "barnesHut",
-#     "timestep": 0.5
-#   },
-#   "interaction": {
-#     "zoomView": true,
-#     "dragView": true,
-#     "dragNodes": true,
-#     "multiselect": false,
-#     "navigationButtons": true,
-#     "keyboard": {
-#       "enabled": false
-#     }
-#   },
-#   "layout": {
-#     "improvedLayout": true
-#   },
-#   "manipulation": false,
-#   "configure": {
-#     "enabled": false
-#   }
-# }
-# """)
-

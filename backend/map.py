@@ -58,30 +58,26 @@ def generate_map(traceroute_data, token):
         return
 
     for i in range(len(locations) - 1):
-        popup_html = f"""
-        <div style="font-family: Arial; font-size: 18px; color: black; padding: 5px; width: 200px;">
-            <strong>IP Address:</strong> {locations[i][0]}<br>
-        </div>
-        """
-        folium.Marker(
-            locations[i][1],
-            popup=folium.Popup(popup_html, max_width=300,parse_html = True),
-            icon=folium.Icon(color='blue', icon='info-sign')
-        ).add_to(folium_map)
-        AntPath([locations[i][1], locations[i + 1][1]], color="red").add_to(folium_map)
+        for i in range(len(locations) - 1):
+            popup_text = f"IP Address: {locations[i][0]}"
+            popup = folium.Popup(popup_text, max_width=300)
+            
+            folium.Marker(
+                location=locations[i][1],
+                popup=popup,
+                icon=folium.Icon(color='blue', icon='info-sign')
+            ).add_to(folium_map)
+            AntPath([locations[i][1], locations[i + 1][1]], color="red").add_to(folium_map)
 
-    # Last hop marker
-    popup_html = f"""
-    <div style="font-family: Arial; font-size: 14px; color: black; padding: 8px; width: 220px;">
-    <b>IP:</b> {ip}<br>
-    </div>
-    """
-    test_popup_html = "<b>HELLO</b><br>This should be on a new line."
-    folium.Marker(
-        locations[-1][1],
-        popup=folium.Popup(popup_html, max_width=300,parse_html = True),
-        icon=folium.Icon(color='red', icon='info-sign')
-    ).add_to(folium_map)
+            # Last hop marker (destination)
+        popup_text = f"Destination IP Address: {locations[-1][0]}"
+        popup = folium.Popup(popup_text, max_width=300)
+
+        folium.Marker(
+                location=locations[-1][1],
+                popup=popup,
+                icon=folium.Icon(color='red', icon='info-sign')
+            ).add_to(folium_map)
 
     # Save map
     folium_map.save("traceroute_map.html")

@@ -502,15 +502,16 @@ int main(int argc, char *argv[]) {
     int bottleneck_hop_num = 0;
     bool destination_reached = false;
     int final_hop = 0;
+    std::vector<std::tuple<int, std::string, double>> hop_avg_bw;
     
     // Build consolidated output in an output stream
     std::ostringstream output;
-    output << "Traceroute to " << destination << " (" << dest_ip << "), " << max_hops << " hops max" << std::endl;
-    output << std::string(70, '-') << std::endl;
+    output << "Traceroute to " << destination << " (" << dest_ip << "), " << max_hops << " hops max" << "\n";
+    output << std::string(70, '-') << "\n";
     
     // Process each hop, write once to the ostringstream and CSV file
     for (const auto& hop : hops) {
-        output << "Hop " << hop.ttl << ":" << std::endl;
+        output << "Hop " << hop.ttl << ":" << "\n";
         final_hop = hop.ttl;
     
         std::vector<double> hop_rtts;
@@ -522,7 +523,7 @@ int main(int argc, char *argv[]) {
             probe_count++;
             // If no response for this probe, print timeout message
             if (reply.ip_address.empty()) {
-                output << "  Probe " << probe_count << ": * Request timed out" << std::endl;
+                output << "  Probe " << probe_count << ": * Request timed out" << "\n";
                 continue;
             }
     
@@ -550,7 +551,7 @@ int main(int argc, char *argv[]) {
             output << "  Probe " << probe_count << ": " << reply.ip_address 
                    << " | RTT: " << reply.rtt << " ms"
                    << " | BW: " << (reply.bandwidth.first > 0 ? std::to_string(reply.bandwidth.first) + " Mbps" : "N/A")
-                   << " | Successful probes(/10):" << reply.bandwidth.second << std::endl;
+                   << " | Successful probes(/10):" << reply.bandwidth.second << "\n";
     
             // Check if the destination is reached
             if (reply.ip_address == dest_ip)
@@ -568,9 +569,15 @@ int main(int argc, char *argv[]) {
             double jitter = std::sqrt(sum_squared_diff / hop_rtts.size());
             double avg_bw = hop_bws.empty() ? 0.0 : std::accumulate(hop_bws.begin(), hop_bws.end(), 0.0) / hop_bws.size();
             output << "  [Stats] Avg RTT: " << avg_rtt << " ms | Jitter: " << jitter 
-                   << " ms | Avg BW: " << (hop_bws.empty() ? "N/A" : std::to_string(avg_bw) + " Mbps") << std::endl;
+                   << " ms | Avg BW: " << (hop_bws.empty() ? "N/A" : std::to_string(avg_bw) + " Mbps") << "\n";
+
+            if (!hop_bws.empty()) {
+                hop_avg_bw.push_back(std::make_tuple(hop.ttl, hop_ip, avg_bw));
+            }
         }
-    
+            // Save per-hop average if valid bandwidth exists
+      
+
         // Write hop data to CSV if valid IP exists
         if (!hop_ip.empty()) {
             double avg_rtt = hop_rtts.empty() ? 0.0 : std::accumulate(hop_rtts.begin(), hop_rtts.end(), 0.0) / hop_rtts.size();
@@ -585,52 +592,74 @@ int main(int argc, char *argv[]) {
                      << (!hop_bws.empty() ? std::to_string(avg_bw) : "N/A") << std::endl;
         }
     
-        output << std::string(70, '-') << std::endl;
+        output << std::string(70, '-') << "\n";
     }
     
     if (destination_reached) {
-        output << "Destination reached at hop " << final_hop << "." << std::endl;
+        output << "Destination reached at hop " << final_hop << "." << "\n";
     } else {
-        output << "Traceroute completed with " << hops.size() << " hops." << std::endl;
+        output << "Traceroute completed with " << hops.size() << " hops." << "\n";
     }
     
     // Write the consolidated output once to the text file and to the console
     std::string consolidated_output = output.str();
     text_file << consolidated_output;
-    
-    csv_file.close();
-    
-    // Calculate overall statistics
-    double overall_avg_rtt = all_rtts.empty() ? 0.0 : std::accumulate(all_rtts.begin(), all_rtts.end(), 0.0) / all_rtts.size();
-    double overall_avg_bw = all_bandwidths.empty() ? 0.0 : std::accumulate(all_bandwidths.begin(), all_bandwidths.end(), 0.0) / all_bandwidths.size();
-    
-    std::ofstream stat_file("stats.txt");
-    if (stat_file) {
-        stat_file << "Total Hops: " << hops.size() << std::endl;
-        if (!all_rtts.empty()) {
-            stat_file << "Average RTT: " << overall_avg_rtt << " ms" << std::endl;
-        }
-        if (!all_bandwidths.empty()) {
-            stat_file << "Average Bandwidth: " << overall_avg_bw << " Mbps" << std::endl;
-        }
-        if (min_bandwidth != std::numeric_limits<double>::max()) {
-            stat_file << "Effective Bandwidth (Bottleneck): " << min_bandwidth << " Mbps" << std::endl;
-        }
-        stat_file.close();
-    }
-    
-    // If print_unexpected_hops() prints additional hop details that duplicate
-    // information, consider removing or modifying it.
-    // Write unexpected hops info to the same file
     print_unexpected_hops(text_file);
 
     // Also optionally print to the console
     print_unexpected_hops(std::cout);
     text_file.close();
+    csv_file.close();
+    
+    // Calculate overall statistics
+    double overall_avg_rtt = all_rtts.empty() ? 0.0 : std::accumulate(all_rtts.begin(), all_rtts.end(), 0.0) / all_rtts.size();
+    double overall_avg_bw = all_bandwidths.empty() ? 0.0 : std::accumulate(all_bandwidths.begin(), all_bandwidths.end(), 0.0) / all_bandwidths.size();
+    // Determine per-hop average bottleneck: hop with the lowest average BW among hops that have valid avg BW
+double min_avg_bw = std::numeric_limits<double>::max();
+int bottleneck_avg_hop = -1;
+std::string bottleneck_avg_ip;
+for (const auto& tup : hop_avg_bw) {
+    int hop_num;
+    std::string ip;
+    double avg_bw;
+    std::tie(hop_num, ip, avg_bw) = tup;
+    if (avg_bw < min_avg_bw) {
+        min_avg_bw = avg_bw;
+        bottleneck_avg_hop = hop_num;
+        bottleneck_avg_ip = ip;
+    }
+}
+
+std::ofstream stat_file("stats.txt");
+if (stat_file) {
+    stat_file << "Total Hops: " << hops.size() << std::endl;
+    if (!all_rtts.empty()) {
+        stat_file << "Average RTT: " << overall_avg_rtt << " ms" << std::endl;
+    }
+    if (!all_bandwidths.empty()) {
+        stat_file << "Average Bandwidth: " << overall_avg_bw << " Mbps" << std::endl;
+    }
+    // Instantaneous (per-probe) bottleneck details
+    if (min_bandwidth != std::numeric_limits<double>::max()) {
+        stat_file << "Instantaneous Bottleneck Link: Hop " << bottleneck_hop_num << " (" << bottleneck_hop_ip 
+                  << ") with Effective Bandwidth: " << min_bandwidth << " Mbps" << std::endl;
+    }
+    // Per-hop average bottleneck details
+    if (bottleneck_avg_hop != -1) {
+        stat_file << "Bottleneck Based on Average per Hop: Hop " << bottleneck_avg_hop << " (" << bottleneck_avg_ip 
+                  << ") with Average Bandwidth: " << min_avg_bw << " Mbps" << std::endl;
+    }
+    stat_file.close();
+}
+
+    
+    // If print_unexpected_hops() prints additional hop details that duplicate
+    // information, consider removing or modifying it.
+    // Write unexpected hops info to the same file
+    
     
     std::cout << "Results saved to traceroute_output.txt, traceroute_icmp.csv, and stats.txt" << std::endl;
     
     return 0;
 }
-
 
