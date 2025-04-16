@@ -458,7 +458,7 @@ int main(int argc, char *argv[]) {
     std::vector<HopProbes> hops = traceroute(destination, max_hops, timeout, probes);
     
     std::ofstream output("traceroute_output.txt");
-    std::ofstream csv_file("traceroute_icmp.csv", std::ios::app); 
+    std::ofstream csv_file("traceroute_udp.csv", std::ios::app); 
     
     if (!output || !csv_file) {
         std::cerr << "Error: Could not open output files." << std::endl;
@@ -558,7 +558,7 @@ int main(int argc, char *argv[]) {
     calculate_network_stats(hops);
     print_unexpected_hops();
     
-    std::cout << "Results saved to traceroute_output.txt, traceroute_icmp.csv, and stats.txt" << std::endl;
+    std::cout << "Results saved to traceroute_output.txt, traceroute_udp.csv, and stats.txt" << std::endl;
     
     return 0;
 }
