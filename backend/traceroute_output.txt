@@ -1,27 +1,174 @@
-Traceroute to ims.iitgn.ac.in (10.0.137.79), 30 hops max
+Traceroute to gil.gujarat.gov.in (103.234.162.115), 30 hops max
 ----------------------------------------------------------------------
 Hop 1:
-  Probe 1: 172.29.144.1 | RTT: 0.611 ms | BW: 1866.666667 Mbps | Jitter: 0.071837 ms | Average RTT:0.404200 ms
+  Probe 1: 172.29.144.1 | RTT: 0.947 ms | BW: 2053.333333 Mbps | Jitter: 0.053372 ms | Average RTT:0.438100 ms
  | Successful probes(/10):10
-  Probe 2: 172.29.144.1 | RTT: 0.369 ms | BW: 1866.666667 Mbps | Jitter: 0.107095 ms | Average RTT:0.388000 ms
+  Probe 2: 172.29.144.1 | RTT: 0.37 ms | BW: 2240.000000 Mbps | Jitter: 0.044300 ms | Average RTT:0.427600 ms
  | Successful probes(/10):10
-  Probe 3: 172.29.144.1 | RTT: 0.475 ms | BW: 1866.666667 Mbps | Jitter: 0.104423 ms | Average RTT:0.379200 ms
+  Probe 3: 172.29.144.1 | RTT: 0.453 ms | BW: 2053.333333 Mbps | Jitter: 0.069511 ms | Average RTT:0.429600 ms
  | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 2:
-  Probe 1: 10.7.0.5 | RTT: 2.139 ms | BW: 17.405332 Mbps | Jitter: 1.416774 ms | Average RTT:4.453300 ms
+  Probe 1: 10.7.0.5 | RTT: 2.995 ms | BW: 15.126859 Mbps | Jitter: 0.566574 ms | Average RTT:2.689400 ms
  | Successful probes(/10):10
-  Probe 2: 10.7.0.5 | RTT: 5.963 ms | BW: 14.699149 Mbps | Jitter: 2.099768 ms | Average RTT:3.740600 ms
+  Probe 2: 10.7.0.5 | RTT: 2.236 ms | BW: 15.234969 Mbps | Jitter: 0.368096 ms | Average RTT:2.869000 ms
  | Successful probes(/10):10
-  Probe 3: 10.7.0.5 | RTT: 3.543 ms | BW: 14.423702 Mbps | Jitter: 1.397682 ms | Average RTT:4.502800 ms
+  Probe 3: 10.7.0.5 | RTT: 2.148 ms | BW: 15.163399 Mbps | Jitter: 14.095597 ms | Average RTT:7.764800 ms
  | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 3:
-  Probe 1: 10.0.137.79 | RTT: 3.219 ms | BW: 8.527517 Mbps | Jitter: 2.879446 ms | Average RTT:4.480800 ms
+  Probe 1: 172.16.4.4 | RTT: 3.495 ms | BW: 1128.092486 Mbps | Jitter: 3.703825 ms | Average RTT:12.577000 ms
+ | Successful probes(/10):2
+  Probe 2: 172.16.4.4 | RTT: 2.448 ms | BW: N/A | Jitter: N/A | Average RTT:N/A
+ | Successful probes(/10):0
+  Probe 3: 172.16.4.4 | RTT: 3.202 ms | BW: N/A | Jitter: N/A | Average RTT:N/A
+ | Successful probes(/10):0
+----------------------------------------------------------------------
+Hop 4:
+  Probe 1: 14.139.98.1 | RTT: 5.442 ms | BW: 17.166481 Mbps | Jitter: 2.399950 ms | Average RTT:8.452300 ms
  | Successful probes(/10):10
-  Probe 2: 10.0.137.79 | RTT: 2.111 ms | BW: 15.708398 Mbps | Jitter: 5.831207 ms | Average RTT:5.807800 ms
+  Probe 2: 14.139.98.1 | RTT: 12.415 ms | BW: 1360.000000 Mbps | Jitter: 2.064038 ms | Average RTT:8.773700 ms
  | Successful probes(/10):10
-  Probe 3: 10.0.137.79 | RTT: 4.315 ms | BW: 7.681290 Mbps | Jitter: 23.259133 ms | Average RTT:12.401500 ms
+  Probe 3: 14.139.98.1 | RTT: 7.773 ms | BW: 708.988764 Mbps | Jitter: 26.721496 ms | Average RTT:16.441700 ms
  | Successful probes(/10):10
 ----------------------------------------------------------------------
-Destination reached at hop 3.
+Hop 5:
+  Probe 1: 10.117.81.253 | RTT: 3.993 ms | BW: 1500.000000 Mbps | Jitter: 0.956727 ms | Average RTT:5.795400 ms
+ | Successful probes(/10):10
+  Probe 2: 10.117.81.253 | RTT: 7.156 ms | BW: 10.655282 Mbps | Jitter: 4.900487 ms | Average RTT:6.208100 ms
+ | Successful probes(/10):10
+  Probe 3: 10.117.81.253 | RTT: 2.554 ms | BW: 14.795890 Mbps | Jitter: 0.729126 ms | Average RTT:3.585400 ms
+ | Successful probes(/10):10
+----------------------------------------------------------------------
+Hop 6:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 7:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 8:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 9:
+  Probe 1: 10.119.234.162 | RTT: 20.829 ms | BW: 1260.000000 Mbps | Jitter: 2.458771 ms | Average RTT:21.111600 ms
+ | Successful probes(/10):10
+  Probe 2: 10.119.234.162 | RTT: 24.137 ms | BW: 1260.000000 Mbps | Jitter: 1.411947 ms | Average RTT:20.853000 ms
+ | Successful probes(/10):10
+  Probe 3: 10.119.234.162 | RTT: 19.621 ms | BW: 1130.769231 Mbps | Jitter: 1.261212 ms | Average RTT:20.888500 ms
+ | Successful probes(/10):10
+----------------------------------------------------------------------
+Hop 10:
+  Probe 1: 117.236.114.34 | RTT: 26.526 ms | BW: 1600.000000 Mbps | Jitter: 9.132617 ms | Average RTT:26.473600 ms
+ | Successful probes(/10):10
+  Probe 2: 117.236.114.34 | RTT: 77.092 ms | BW: 1400.000000 Mbps | Jitter: 10.945482 ms | Average RTT:27.371500 ms
+ | Successful probes(/10):10
+  Probe 3: 117.236.114.34 | RTT: 20.401 ms | BW: 1500.000000 Mbps | Jitter: 1.231740 ms | Average RTT:21.174800 ms
+ | Successful probes(/10):10
+----------------------------------------------------------------------
+Hop 11:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 12:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 13:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 14:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 15:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 16:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 17:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 18:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 19:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 20:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 21:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 22:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 23:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 24:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 25:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 26:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 27:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 28:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 29:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 30:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Traceroute completed with 30 hops.

@@ -29,8 +29,9 @@ if st.button("Run"):
                 "http://localhost:8000/run_traceroute",
                 data={"destination": destination, "packet_type": packet_type.lower()}
             )
+            data = response.json()
 
-            if response.ok:
+            if "traceroute_output" in data:
                 st.session_state.traceroute_ran = True
                 st.session_state.traceroute_data = response.json()
                 st.session_state.show_plots = False  # Reset plot state
@@ -65,17 +66,19 @@ if st.session_state.traceroute_ran and st.session_state.traceroute_data:
         st.warning("⚠️ Topology not generated")
 
     st.markdown("### Raw Output")
-    st.code(data["traceroute_output"], language="text")
+    st.code(data.get("traceroute_output", "Traceroute output not found."), language="text")
 
+    # Stats
     st.markdown("### Network Statistics")
-    st.code(data["stats"], language="text")
+    st.code(data.get("stats", "No stats available."), language="text")
+
 
     if "unexpected_hops" in data:
         st.subheader("Unexpected Hops Detected")
         st.code(data["unexpected_hops"])
 
     # Time of Day selector and plot trigger
-    st.markdown("### Visual Output (Plots)")
+    st.markdown("### Usage Statistics")
     time_of_day = st.selectbox("Select Time of Day", ["Morning", "Afternoon", "Evening", "Night"])
 
     if st.button("Show RTT & Bandwidth Plots"):

@@ -239,5 +239,3 @@ def build_graph(hops, output_file="network_topology.html", dest_ip=None):
     with open(output_file, "w") as f:
         f.write(html)
 
-hops,dest=parse_traceroute("traceroute_output.txt")
-build_graph(hops, output_file="network_topology.html", dest_ip=dest)
