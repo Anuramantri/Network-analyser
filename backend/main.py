@@ -2,7 +2,7 @@ from fastapi import FastAPI, Form
 from fastapi.responses import FileResponse
 import os
 from map import parse_traceroute_file, generate_map
-from network2 import build_graph, parse_traceroute
+from network import build_graph, parse_traceroute
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from network_analysis import load_and_process_data, plot_hop_metrics
@@ -11,7 +11,6 @@ from network_analysis import load_and_process_data, plot_hop_metrics
 app = FastAPI()
 IPINFO_TOKEN = "a2b763057ddcfd"
 
-
 @app.post("/run_traceroute")
 async def run_traceroute (
     destination: str = Form(...),
@@ -19,11 +18,12 @@ async def run_traceroute (
 ):
     output_file = "traceroute_output.txt"
     stats_file = "stats.txt"
+    hops_file= 'unexpected_hops.txt'
 
     # Decide which binary to run based on packet_type
     if packet_type == "udp":
         cmd = f"sudo ./traceroute_udp {destination}"
-    else:  # default to icmp
+    else:
         cmd = f"sudo ./traceroute_icmp {destination}"
 
     result = os.system(cmd)
@@ -31,19 +31,21 @@ async def run_traceroute (
     if result != 0:
         return {"error": "Traceroute tool failed to run."}
 
-    # Process traceroute and generate map
+    # Parse and generate fresh outputs
     traceroute_data = parse_traceroute_file(output_file)
-    generate_map(traceroute_data,IPINFO_TOKEN)
+    generate_map(traceroute_data, IPINFO_TOKEN)
 
-    traceroute_data2 = parse_traceroute(output_file)
-    build_graph(traceroute_data2)
+    traceroute_data2,destination = parse_traceroute(output_file)
+    build_graph(traceroute_data2,dest_ip=destination)
 
-    # Read raw output and stats
     with open(output_file, "r") as f:
         traceroute_text = f.read()
 
     with open(stats_file, "r") as f:
         stats = f.read()
+
+    with open(hops_file, "r") as f:
+        hops = f.read()
 
     return {
         "message": "Traceroute completed",
@@ -52,6 +54,7 @@ async def run_traceroute (
         "traceroute_output": traceroute_text,
         "stats": stats
     }
+
 
 @app.get("/map")
 async def get_map():

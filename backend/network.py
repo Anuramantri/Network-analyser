@@ -1,326 +1,177 @@
-import networkx as nx
+import re
+import numpy as np
 from pyvis.network import Network
 import re
 from collections import defaultdict
-import numpy as np
-from collections import Counter
+
+def select_main_node(hop):
+    stats = defaultdict(lambda: {'rtt': float('inf'), 'success': 0, 'count': 0})
+    
+    for entry in hop:
+        ip = entry['ip']
+        stats[ip]['success'] += entry.get('success', 0)
+        stats[ip]['count'] += 1
+        stats[ip]['rtt'] = min(stats[ip]['rtt'], entry['rtt'])
+
+    max_count = max(stats[ip]['count'] for ip in stats)
+    candidates = [ip for ip in stats if stats[ip]['count'] == max_count and max_count > 1]
+
+    if not candidates:
+        candidates = list(stats.keys())
+
+    max_success = max(stats[ip]['success'] for ip in candidates)
+    candidates = [ip for ip in candidates if stats[ip]['success'] == max_success]
+
+    return min(candidates, key=lambda ip: stats[ip]['rtt'])
 
 
-def parse_traceroute(log_text):
+def parse_traceroute(filename):
+    with open(filename, 'r') as file:
+        lines = file.readlines()
+
+    dest_ip = None
+    first_line_match = re.match(r"Traceroute to .+ \(([\d\.]+)\)", lines[0])
+    if first_line_match:
+        dest_ip = first_line_match.group(1)
+
     hops = []
-    current_hop = {}
-    probe_data = []
+    current_hop = []
 
-    for line in log_text.splitlines():
-        line = line.strip()
-        if line.startswith("Hop"):
+    for line in lines[1:]:
+        hop_match = re.match(r"Hop (\d+):", line)
+        if hop_match:
             if current_hop:
-                current_hop["probes"] = probe_data
                 hops.append(current_hop)
-                probe_data = []
-            current_hop = {"hop_num": int(re.search(r"Hop (\d+):", line).group(1))}
+                current_hop = []
+            continue
 
-        elif line.startswith("Probe"):
-            match = re.search(
-                r"Probe (\d+): ([\d\.]+) \| RTT: ([\d\.]+) ms \| BW: ([\d\.]+) Mbps \| Successful probes\(/10\):(\d+)", 
-                line
-            )
-
-            if match:
-                probe_data.append({
-                    "probe": int(match.group(1)),
-                    "ip": match.group(2),
-                    "rtt": float(match.group(3)),
-                    "bw": float(match.group(4)),
-                    "successful_probes": int(match.group(5))
-                })
-
-        elif line.startswith("[Stats]"):
-            match = re.search(r"Avg RTT: ([\d\.]+) ms \| Jitter: ([\d\.]+) ms \| Avg BW: ([\d\.]+) Mbps", line)
-            if match:
-                current_hop["avg_rtt"] = float(match.group(1))
-                current_hop["jitter"] = float(match.group(2))
-                current_hop["avg_bw"] = float(match.group(3))
-
-    if current_hop:
-        current_hop["probes"] = probe_data
-        hops.append(current_hop)
-
-    print
-    return hops
-
-def create_network_visualization(traceroute_data):
-    def select_main_ip(probes):
-        ip_counts = Counter(p['ip'] for p in probes)
-        ip_to_success = {}
-        ip_to_rtt = {}
-
-        for p in probes:
-            ip = p['ip']
-            ip_to_success[ip] = ip_to_success.get(ip, 0) + p.get('successful_probes', 0)
-            ip_to_rtt[ip] = min(ip_to_rtt.get(ip, float('inf')), p['rtt'])
-
-        # Step 1: most common IPs (appearing in 2 or more probes)
-        filtered = [ip for ip, count in ip_counts.items() if count >= 2]
-        candidates = filtered if filtered else list(ip_counts.keys())
-
-        # Step 2: Max successful probes
-        max_success = max(ip_to_success[ip] for ip in candidates)
-        success_candidates = [ip for ip in candidates if ip_to_success[ip] == max_success]
-
-        # Step 3: Min RTT
-        best_ip = min(success_candidates, key=lambda ip: ip_to_rtt[ip])
-        return best_ip
-
-    G = nx.DiGraph()
-    hop_ip_map = {}  # hop_num -> set of IPs
-    all_nodes = set()
-    bandwidths = []
-    main_path = []
-
-    # Build nodes and collect bandwidths
-    for hop in traceroute_data:
-        hop_num = hop['hop_num']
-        ip_set = set()
-        for probe in hop['probes']:
-            ip = probe['ip']
-            rtt = probe['rtt']
-            bw = probe['bw']
-            ip_set.add(ip)
-            all_nodes.add(ip)
-            G.add_node(
-                ip,
-                title=f"IP: {ip}\nRTT: {rtt} ms\nBandwidth: {bw} Mbps",
-                rtt=rtt,
-                bandwidth=bw
-            )
-            bandwidths.append(bw)
-        hop_ip_map[hop_num] = list(ip_set)
-
-        # Select main IP per hop
-        main_ip = select_main_ip(hop['probes'])
-        main_path.append(main_ip)
-
-    # Build edges between IPs from consecutive hops
-    sorted_hops = sorted(hop_ip_map.keys())
-    for i in range(len(sorted_hops) - 1):
-        curr_hop = sorted_hops[i]
-        next_hop = sorted_hops[i + 1]
-        curr_ips = hop_ip_map[curr_hop]
-        next_ips = hop_ip_map[next_hop]
-
-        main_src = main_path[i]
-        main_dst = main_path[i + 1]
-
-        for src in curr_ips:
-            for dst in next_ips:
-                is_main = (src == main_src and dst == main_dst)
-                G.add_edge(src, dst, main=is_main)
-
-    # Pyvis Network
-    net = Network(
-        notebook=False,
-        cdn_resources="in_line",
-        bgcolor="#222222",
-        font_color="white",
-        height="750px",
-        width="100%"
-    )
-
-    # Set graph options
-    net.set_options("""
-    {
-      "nodes": {
-        "borderWidth": 2,
-        "borderWidthSelected": 4,
-        "font": {
-          "size": 15,
-          "face": "Tahoma"
-        }
-      },
-      "edges": {
-        "color": {
-          "inherit": true
-        },
-        "smooth": {
-          "type": "continuous",
-          "forceDirection": "none"
-        }
-      },
-      "physics": {
-        "barnesHut": {
-          "gravitationalConstant": -80000,
-          "centralGravity": 0.3,
-          "springLength": 250
-        },
-        "minVelocity": 0.75
-      }
-    }
-    """)
-
-    # Compute bandwidth bins
-    if bandwidths:
-        bins = np.quantile(bandwidths, [0, 0.33, 0.66, 1.0])
-    else:
-        bins = [0, 3000, 7000, 10000]  # fallback
-
-    colors = ["#ff0000", "#ffaa00", "#00ff00"]  # red, orange, green
-
-    # Add nodes with color logic
-    for node, attrs in G.nodes(data=True):
-        bw = attrs.get('bandwidth', 0)
-        if bw <= bins[1]:
-            color = colors[0]
-        elif bw <= bins[2]:
-            color = colors[1]
-        else:
-            color = colors[2]
-
-        size = 20
-        net.add_node(
-            node,
-            label=node,
-            title=attrs.get('title', ''),
-            color=color,
-            size=size
+        # Updated regex to support "N/A" without units
+        probe_match = re.match(
+            r"\s+Probe \d+: ([\d\.]+) \| RTT: ([\d\.]+) ms \| BW: ([\d\.NA/]+) ?(?:Mbps)? \| Jitter: ([\d\.NA/]+) ?(?:ms)? \| Successful probes\(/10\):(\d+)",
+            line
         )
 
-    # Add edges with styles
-    for src, dst, attrs in G.edges(data=True):
-        net.add_edge(src, dst, dashes=not attrs.get('main', False))
+        if probe_match:
+            ip, rtt, bw, jitter, success = probe_match.groups()
+            bw = None if bw == "N/A" else float(bw)
+            jitter = None if jitter == "N/A" else float(jitter)
+            current_hop.append({
+                "ip": ip,
+                "rtt": float(rtt),
+                "bw": bw,
+                "jitter": jitter,
+                "success": int(success)
+            })
 
 
-    html_file = "network_topology.html"
-    net.save_graph(html_file)
+    if current_hop:
+        hops.append(current_hop)
 
-    # Optional: add zoom/legend functions if defined elsewhere
-    add_zoom_constraints(html_file)
-    add_legend_to_html(html_file, bins, colors)
-
-    return html_file
+    return hops,dest_ip
 
 
-def add_zoom_constraints(html_file: str, min_zoom: float = 0.3, max_zoom: float = 2.0, drag_bounds: int = 1000):
-    """
-    Injects zoom and drag constraints into the network visualization HTML.
-    """
-    with open(html_file, "r", encoding="utf-8") as f:
-        html = f.read()
 
-    js_constraints = f"""
-    <script type="text/javascript">
-      network.on("beforeDrawing", function() {{
-        var scale = network.getScale();
-        if (scale < {min_zoom}) {{
-          network.moveTo({{scale: {min_zoom}}});
-        }} else if (scale > {max_zoom}) {{
-          network.moveTo({{scale: {max_zoom}}});
-        }}
-        var pos = network.getViewPosition();
-        var clampedX = Math.max(Math.min(pos.x, {drag_bounds}), -{drag_bounds});
-        var clampedY = Math.max(Math.min(pos.y, {drag_bounds}), -{drag_bounds});
-        if (clampedX !== pos.x || clampedY !== pos.y) {{
-          network.moveTo({{position: {{x: clampedX, y: clampedY}}, scale: scale}});
-        }}
-      }});
-    </script>
-    </body>
-    """
-    html = html.replace("</body>", js_constraints)
+def compute_bandwidth_bins(hops):
+    all_bw = [entry['bw'] for hop in hops for entry in hop if entry['bw'] is not None]
+    quantiles = np.quantile(all_bw, [0.33, 0.66]) if all_bw else [0, 0]
+    return quantiles
 
-    with open(html_file, "w", encoding="utf-8") as f:
-        f.write(html)
+def get_color(bw, is_source, quantiles):
+    if is_source:
+        return 'blue'
+    if bw is None:
+        return 'gray'
+    if bw <= quantiles[0]:
+        return 'red'
+    elif bw <= quantiles[1]:
+        return 'yellow'
+    else:
+        return 'green'
 
-def add_legend_to_html(html_file, bins, colors):
-    legend_html = """
-    <div id="legend" style="
+
+def build_graph(hops,output_file="network_topology.html",dest_ip=None):
+    net = Network(height="700px", width="100%", bgcolor="#222222", font_color="white", directed=True)
+    node_info = {}
+    quantiles = compute_bandwidth_bins(hops)
+    added_edges = set()
+
+    if dest_ip:
+        dest_ip = dest_ip.strip()
+
+    for hop_index, hop in enumerate(hops):
+        curr_ips = set()
+        for entry in hop:
+            ip = entry['ip']
+            if ip not in node_info:
+                title = f"IP: {ip}\nRTT: {entry['rtt']} ms\nBW: {entry['bw']} Mbps\nJitter: {entry['jitter']} ms"
+                color = get_color(entry['bw'], (hop_index == 0 or dest_ip == ip), quantiles)
+                net.add_node(ip, label=ip, title=title, color=color)
+                node_info[ip] = True
+            curr_ips.add(ip)
+
+        # Connect previous hop to current hop
+      
+        if hop_index > 0:
+            main_prev_ip = select_main_node(hops[hop_index - 1])
+            for curr_ip in curr_ips:
+                if ((main_prev_ip, curr_ip) not in added_edges) and (main_prev_ip != curr_ip):
+                    net.add_edge(main_prev_ip, curr_ip)
+                    added_edges.add((main_prev_ip, curr_ip))
+
+    # Add legend after rendering
+    net.save_graph(output_file)
+
+    legend_html = f"""
+    <div style="
         position: fixed;
-        bottom: 20px;
-        left: 20px;
-        background: rgba(0, 0, 0, 0.7);
-        color: white;
+        bottom: 50px;
+        left: 50px;
+        background-color: rgba(255,255,255,0.9);
         padding: 10px;
-        font-family: Tahoma, sans-serif;
-        font-size: 14px;
         border-radius: 8px;
-        z-index: 999;
+        font-size: 14px;
+        font-family: monospace;
+        z-index: 1000;
     ">
-        <strong>Bandwidth Legend (Mbps)</strong><br>
+      <b>Bandwidth Legend (Mbps)</b><br>
+      <span style="color:red;">⬤</span> ≤ {quantiles[0]:.2f}<br>
+      <span style="color:orange;">⬤</span> ≤ {quantiles[1]:.2f}<br>
+      <span style="color:green;">⬤</span> > {quantiles[1]:.2f}
+    </div>
     """
 
-    for i in range(len(bins) - 1):
-        legend_html += f"""
-            <div style="margin-top: 4px;">
-                <span style="display:inline-block; width:16px; height:16px; background:{colors[i]}; margin-right:8px; border-radius:3px;"></span>
-                {bins[i]:.2f} - {bins[i+1]:.2f}
-            </div>
-        """
-
-    legend_html += "</div>\n</body>"
-
-    # Inject legend before </body>
-    with open(html_file, "r", encoding="utf-8") as f:
+    with open(output_file, "r") as f:
         html = f.read()
-    html = html.replace("</body>", legend_html)
-
-    with open(html_file, "w", encoding="utf-8") as f:
+    html = html.replace("</body>", legend_html + "</body>")
+    with open(output_file, "w") as f:
         f.write(html)
 
-# with open("traceroute_output2.txt", "r") as f:
-#     log_text = f.read()
-#     traceroute_data = parse_traceroute(log_text)
-#     create_network_visualization(traceroute_data)
 
-#     net.set_options("""
-# var options = {
-#   "nodes": {
-#     "borderWidth": 2,
-#     "borderWidthSelected": 4,
-#     "font": {
-#       "size": 15,
-#       "face": "Tahoma"
-#     }
-#   },
-#   "edges": {
-#     "color": {
-#       "inherit": true
-#     },
-#     "smooth": {
-#       "enabled": true,
-#       "type": "dynamic"
-#     }
-#   },
-#   "physics": {
-#     "enabled": true,
-#     "barnesHut": {
-#       "gravitationalConstant": -20000,
-#       "centralGravity": 0.3,
-#       "springLength": 200,
-#       "springConstant": 0.05,
-#       "damping": 0.1,
-#       "avoidOverlap": 1
-#     },
-#     "minVelocity": 0.5,
-#     "solver": "barnesHut",
-#     "timestep": 0.5
-#   },
-#   "interaction": {
-#     "zoomView": true,
-#     "dragView": true,
-#     "dragNodes": true,
-#     "multiselect": false,
-#     "navigationButtons": true,
-#     "keyboard": {
-#       "enabled": false
-#     }
-#   },
-#   "layout": {
-#     "improvedLayout": true
-#   },
-#   "manipulation": false,
-#   "configure": {
-#     "enabled": false
-#   }
-# }
-# """)
+if __name__ == "__main__":
+    hops = parse_traceroute("traceroute_output.txt")
+    build_graph(hops)
 
+
+
+        # main_path_edges = []
+        # for i in range(1, len(hops)):
+        #     main_prev_ip = select_main_node(hops[i - 1])
+        #     main_curr_ip = select_main_node(hops[i])
+        #     # Compute the average BW for the main node in the current hop (if available)
+        #     bw_values = [entry['bw'] for entry in hops[i] if entry['ip'] == main_curr_ip and entry['bw'] is not None]
+        #     # If there is no available BW value, use a very high number so it isn't treated as the bottleneck.
+        #     avg_bw = sum(bw_values) / len(bw_values) if bw_values else float('inf')
+        #     main_path_edges.append((main_prev_ip, main_curr_ip, avg_bw))
+        
+        # # Find the edge with the minimum average bandwidth
+        # if main_path_edges:
+        #     bottleneck_edge = min(main_path_edges, key=lambda x: x[2])
+        #     bottleneck_src, bottleneck_dst, _ = bottleneck_edge
+        #     # Add an extra edge with glowing attributes (or re-add it to override default styling).
+        #     net.add_edge(
+        #         bottleneck_src,
+        #         bottleneck_dst,
+        #         color="cyan",
+        #         width=5,
+        #         title="Bottleneck Link (Lowest Bandwidth)"
+        #     )

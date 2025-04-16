@@ -1,73 +1,68 @@
-Traceroute to google.com (142.251.42.110), 30 hops max
+Traceroute to google.com (142.250.199.142), 30 hops max
 ----------------------------------------------------------------------
 Hop 1:
-  Probe 1: 172.29.144.1 | RTT: 0.956 ms | BW: 1322.222222 Mbps | Jitter: 0.049222 ms | Successful probes(/10):10
-  Probe 2: 172.29.144.1 | RTT: 0.459 ms | BW: 1866.666667 Mbps | Jitter: 0.040889 ms | Successful probes(/10):10
-  Probe 3: 172.29.144.1 | RTT: 0.417 ms | BW: 2240.000000 Mbps | Jitter: 0.015222 ms | Successful probes(/10):10
+  Probe 1: 172.29.144.1 | RTT: 1.072 ms | BW: 2053.333333 Mbps | Jitter: 0.002000 ms | Successful probes(/10):10
+  Probe 2: 172.29.144.1 | RTT: 0.392 ms | BW: 1866.666667 Mbps | Jitter: 0.001222 ms | Successful probes(/10):10
+  Probe 3: 172.29.144.1 | RTT: 0.599 ms | BW: 1866.666667 Mbps | Jitter: 0.002444 ms | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 2:
-  Probe 1: 10.7.0.2 | RTT: 12.801 ms | BW: 1600.000000 Mbps | Jitter: 0.088111 ms | Successful probes(/10):10
-  Probe 2: 10.7.0.2 | RTT: 8.209 ms | BW: 1500.000000 Mbps | Jitter: 0.002889 ms | Successful probes(/10):10
-  Probe 3: 10.7.0.2 | RTT: 5.861 ms | BW: 1600.000000 Mbps | Jitter: 0.364889 ms | Successful probes(/10):10
+  Probe 1: 10.7.0.2 | RTT: 5.809 ms | BW: 1600.000000 Mbps | Jitter: 1.048889 ms | Successful probes(/10):10
+  Probe 2: 10.7.0.2 | RTT: 6.045 ms | BW: 1130.769231 Mbps | Jitter: 0.342111 ms | Successful probes(/10):10
+  Probe 3: 10.7.0.2 | RTT: 6.931 ms | BW: 1309.090909 Mbps | Jitter: 0.199000 ms | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 3:
-  Probe 1: 10.1.0.3 | RTT: 12.557 ms | BW: 1500.000000 Mbps | Jitter: 0.268556 ms | Successful probes(/10):10
-  Probe 2: 10.1.0.3 | RTT: 4.745 ms | BW: 1500.000000 Mbps | Jitter: 0.000778 ms | Successful probes(/10):10
-  Probe 3: 10.1.0.3 | RTT: 5.244 ms | BW: 1600.000000 Mbps | Jitter: 0.290000 ms | Successful probes(/10):10
+  Probe 1: 10.1.0.3 | RTT: 3.676 ms | BW: 1209.090909 Mbps | Jitter: 0.578333 ms | Successful probes(/10):10
+  Probe 2: 10.1.0.3 | RTT: 2.188 ms | BW: 8.364568 Mbps | Jitter: 26.508667 ms | Successful probes(/10):10
+  Probe 3: 10.1.0.3 | RTT: 3.165 ms | BW: 20.635426 Mbps | Jitter: 9.437889 ms | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 4:
-  Probe 1: 172.16.4.4 | RTT: 5.326 ms | BW: 1733.333333 Mbps | Jitter: 0.001000 ms | Successful probes(/10):2
-  Probe 2: 172.16.4.4 | RTT: 4.858 ms | BW: N/A | Jitter: N/A | Successful probes(/10):0
-  Probe 3: 172.16.4.4 | RTT: 8.697 ms | BW: N/A | Jitter: N/A | Successful probes(/10):0
+  Probe 1: 172.16.4.4 | RTT: 4.843 ms | BW: 1127.026349 Mbps | Jitter: 0.792000 ms | Successful probes(/10):2
+  Probe 2: 172.16.4.4 | RTT: 3.509 ms | BW: N/A | Jitter: N/A | Successful probes(/10):0
+  Probe 3: 172.16.4.4 | RTT: 3.206 ms | BW: N/A | Jitter: N/A | Successful probes(/10):0
 ----------------------------------------------------------------------
 Hop 5:
-  Probe 1: 14.139.98.1 | RTT: 6.725 ms | BW: 1600.000000 Mbps | Jitter: 0.001333 ms | Successful probes(/10):10
-  Probe 2: 14.139.98.1 | RTT: 7.163 ms | BW: 1600.000000 Mbps | Jitter: 0.002778 ms | Successful probes(/10):10
-  Probe 3: 14.139.98.1 | RTT: 6.755 ms | BW: 1500.000000 Mbps | Jitter: 0.474444 ms | Successful probes(/10):10
+  Probe 1: 14.139.98.1 | RTT: 6.374 ms | BW: 17.827851 Mbps | Jitter: 0.686444 ms | Successful probes(/10):10
+  Probe 2: 14.139.98.1 | RTT: 8.819 ms | BW: 12.395465 Mbps | Jitter: 0.695444 ms | Successful probes(/10):10
+  Probe 3: 14.139.98.1 | RTT: 5.484 ms | BW: 17.560059 Mbps | Jitter: 0.758222 ms | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 6:
-  Probe 1: 10.117.81.253 | RTT: 12.763 ms | BW: 1500.000000 Mbps | Jitter: 0.609000 ms | Successful probes(/10):10
-  Probe 2: 10.117.81.253 | RTT: 3.666 ms | BW: 1400.000000 Mbps | Jitter: 1.048111 ms | Successful probes(/10):10
-  Probe 3: 10.117.81.253 | RTT: 5.887 ms | BW: 1322.222222 Mbps | Jitter: 0.008778 ms | Successful probes(/10):10
+  Probe 1: 10.117.81.253 | RTT: 2.927 ms | BW: 13.916673 Mbps | Jitter: 0.317778 ms | Successful probes(/10):10
+  Probe 2: 10.117.81.253 | RTT: 3.462 ms | BW: 14.295302 Mbps | Jitter: 0.202000 ms | Successful probes(/10):10
+  Probe 3: 10.117.81.253 | RTT: 3.936 ms | BW: 7.896216 Mbps | Jitter: 1.106667 ms | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 7:
-  Probe 1: 10.154.8.137 | RTT: 21.729 ms | BW: 1600.000000 Mbps | Jitter: 1.049667 ms | Successful probes(/10):10
-  Probe 2: 10.154.8.137 | RTT: 15.26 ms | BW: 1733.333333 Mbps | Jitter: 0.003111 ms | Successful probes(/10):10
-  Probe 3: 10.154.8.137 | RTT: 22.411 ms | BW: 1500.000000 Mbps | Jitter: 0.002444 ms | Successful probes(/10):10
+  Probe 1: 10.154.8.137 | RTT: 12.018 ms | BW: 409.061489 Mbps | Jitter: 0.507889 ms | Successful probes(/10):10
+  Probe 2: 10.154.8.137 | RTT: 14.144 ms | BW: 356.635071 Mbps | Jitter: 0.451889 ms | Successful probes(/10):10
+  Probe 3: 10.154.8.137 | RTT: 83.741 ms | BW: 950.406504 Mbps | Jitter: 0.488222 ms | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 8:
-  Probe 1: 10.255.239.170 | RTT: 14.984 ms | BW: 1400.000000 Mbps | Jitter: 0.189000 ms | Successful probes(/10):10
-  Probe 2: 10.255.239.170 | RTT: 17.56 ms | BW: 1600.000000 Mbps | Jitter: 0.289000 ms | Successful probes(/10):10
-  Probe 3: 10.255.239.170 | RTT: 15.92 ms | BW: 1500.000000 Mbps | Jitter: 0.256000 ms | Successful probes(/10):10
+  Probe 1: 10.255.239.170 | RTT: 13.776 ms | BW: 16.012295 Mbps | Jitter: 1.258444 ms | Successful probes(/10):10
+  Probe 2: 10.255.239.170 | RTT: 14.45 ms | BW: 53.113175 Mbps | Jitter: 0.638778 ms | Successful probes(/10):10
+  Probe 3: 10.255.239.170 | RTT: 13.709 ms | BW: 14.427609 Mbps | Jitter: 0.743667 ms | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 9:
-  Probe 1: 10.152.7.214 | RTT: 15.343 ms | BW: 1500.000000 Mbps | Jitter: 0.342111 ms | Successful probes(/10):10
-  Probe 2: 10.152.7.214 | RTT: 15.363 ms | BW: 1400.000000 Mbps | Jitter: 0.023667 ms | Successful probes(/10):10
-  Probe 3: 10.152.7.214 | RTT: 14.228 ms | BW: 1500.000000 Mbps | Jitter: 0.001667 ms | Successful probes(/10):10
+  Probe 1: 10.152.7.214 | RTT: 13.881 ms | BW: 542.825849 Mbps | Jitter: 0.764333 ms | Successful probes(/10):10
+  Probe 2: 10.152.7.214 | RTT: 15.584 ms | BW: 39.107559 Mbps | Jitter: 0.154222 ms | Successful probes(/10):10
+  Probe 3: 10.152.7.214 | RTT: 17.783 ms | BW: 19.151047 Mbps | Jitter: 1.293778 ms | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 10:
-  Probe 1: 72.14.204.62 | RTT: 15.234 ms | BW: 1309.090909 Mbps | Jitter: 0.002667 ms | Successful probes(/10):10
-  Probe 2: 72.14.204.62 | RTT: 15.156 ms | BW: 1069.090909 Mbps | Jitter: 0.276778 ms | Successful probes(/10):10
-  Probe 3: 72.14.204.62 | RTT: 19.374 ms | BW: 1322.222222 Mbps | Jitter: 0.003333 ms | Successful probes(/10):10
+  Probe 1: 142.250.172.80 | RTT: 18.05 ms | BW: 14.690072 Mbps | Jitter: 0.846000 ms | Successful probes(/10):6
+  Probe 2: 142.250.172.80 | RTT: 19.957 ms | BW: 1244.444444 Mbps | Jitter: 5.659750 ms | Successful probes(/10):5
+  Probe 3: 142.250.172.80 | RTT: 16.074 ms | BW: 1182.222222 Mbps | Jitter: 0.251667 ms | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 11:
-  Probe 1: * Request timed out
-  Probe 2: * Request timed out
-  Probe 3: * Request timed out
+  Probe 1: 142.251.76.23 | RTT: 16.953 ms | BW: 1400.000000 Mbps | Jitter: 1.050333 ms | Successful probes(/10):10
+  Probe 2: 142.251.76.23 | RTT: 14.747 ms | BW: 1866.666667 Mbps | Jitter: 0.588000 ms | Successful probes(/10):9
+  Probe 3: 142.251.76.23 | RTT: 19.254 ms | BW: 381.592920 Mbps | Jitter: 0.651778 ms | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 12:
-  Probe 1: 142.250.238.196 | RTT: 22.649 ms | BW: N/A | Jitter: N/A | Successful probes(/10):0
-  Probe 2: 142.250.238.80 | RTT: 14.508 ms | BW: N/A | Jitter: N/A | Successful probes(/10):0
-  Probe 3: 142.250.208.148 | RTT: 17.231 ms | BW: N/A | Jitter: N/A | Successful probes(/10):0
+  Probe 1: 142.251.77.101 | RTT: 17.798 ms | BW: 1866.666667 Mbps | Jitter: 0.598333 ms | Successful probes(/10):10
+  Probe 2: 142.251.77.101 | RTT: 19.447 ms | BW: 1500.000000 Mbps | Jitter: 1.030333 ms | Successful probes(/10):10
+  Probe 3: 142.251.77.101 | RTT: 14.935 ms | BW: 1400.000000 Mbps | Jitter: 0.002889 ms | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 13:
-  Probe 1: 142.251.77.95 | RTT: 15.798 ms | BW: N/A | Jitter: N/A | Successful probes(/10):0
-  Probe 2: 192.178.110.206 | RTT: 17.925 ms | BW: 1400.000000 Mbps | Jitter: 0.013667 ms | Successful probes(/10):10
-  Probe 3: 142.251.77.95 | RTT: 15.938 ms | BW: N/A | Jitter: N/A | Successful probes(/10):0
+  Probe 1: 142.250.199.142 | RTT: 12.931 ms | BW: N/A | Jitter: N/A | Successful probes(/10):0
+  Probe 2: 142.250.199.142 | RTT: 15.095 ms | BW: N/A | Jitter: N/A | Successful probes(/10):0
+  Probe 3: 142.250.199.142 | RTT: 14.316 ms | BW: N/A | Jitter: N/A | Successful probes(/10):0
 ----------------------------------------------------------------------
-Hop 14:
-  Probe 1: 142.251.42.110 | RTT: 21.235 ms | BW: 1500.000000 Mbps | Jitter: 0.131778 ms | Successful probes(/10):10
-  Probe 2: 142.250.226.135 | RTT: 17.975 ms | BW: N/A | Jitter: N/A | Successful probes(/10):0
-  Probe 3: 142.251.42.110 | RTT: 15.792 ms | BW: 1309.090909 Mbps | Jitter: 0.003000 ms | Successful probes(/10):10
-----------------------------------------------------------------------
-Destination reached at hop 14.
+Destination reached at hop 13.

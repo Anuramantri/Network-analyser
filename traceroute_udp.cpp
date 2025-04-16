@@ -242,7 +242,9 @@ std::vector<HopProbes> traceroute(const char *destination, int max_hops, int tim
         std::cerr << "Unknown host: " << destination << std::endl;
         return all_hops;
     }
-    char *dest_addr = inet_ntoa(*(struct in_addr *)host->h_addr);
+    char dest_addr[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, host->h_addr, dest_addr, sizeof(dest_addr));
+
 
     bool reached = false;
     for (int ttl = 1; ttl <= max_hops; ttl++) {
@@ -292,6 +294,11 @@ std::vector<HopProbes> traceroute(const char *destination, int max_hops, int tim
 
             if (bytes > 0) {
                 char from_addr[INET_ADDRSTRLEN];
+                if (!inet_ntop(AF_INET, &from.sin_addr, from_addr, sizeof(from_addr))) {
+                    perror("inet_ntop");
+                    continue;
+                }
+
                 inet_ntop(AF_INET, &from.sin_addr, from_addr, sizeof(from_addr));
 
                 double rtt = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
@@ -391,24 +398,32 @@ void calculate_network_stats(const std::vector<HopProbes>& hops) {
     stats.close();
 }
 
-// void print_unexpected_hops(std::ostream& out) {
-//     if (unexpected_hops.empty()) {
-//         out << "No unexpected hops detected." << std::endl;
-//         return;
-//     }
+void print_unexpected_hops() {
 
-//     out << "Unexpected IPs encountered during traceroute:" << std::endl;
-//     out << std::string(60, '-') << std::endl;
-//     out << "Hop\tExpected IP\t\tActual IP\t\tProbe" << std::endl;
-//     out << std::string(60, '-') << std::endl;
+    std::ofstream out("unexpected_hops.txt");
+    if (!out) {
+        std::cerr << "Error: Could not open output file." << std::endl;
+        return;
+    }
 
-//     for (const auto& hop : unexpected_hops) {
-//         out << hop.hop_number << "\t"
-//             << hop.expected_ip << "\t\t"
-//             << hop.actual_ip << "\t\t"
-//             << hop.probe_number << std::endl;
-//     }
-// }
+    if (unexpected_hops.empty()) {
+        return;
+    }
+
+    out << "Unexpected IPs encountered during bandwidth estimation:" << std::endl;
+    out << std::string(60, '-') << std::endl;
+    out << "Hop\tExpected IP\t\tActual IP\t\tProbe" << std::endl;
+    out << std::string(60, '-') << std::endl;
+
+    for (const auto& hop : unexpected_hops) {
+        out << hop.hop_number << "\t"
+            << hop.expected_ip << "\t\t"
+            << hop.actual_ip << "\t\t"
+            << hop.probe_number << std::endl;
+    }
+    out.close();
+    return;
+}
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -525,10 +540,13 @@ int main(int argc, char *argv[]) {
         output << "Traceroute completed with " << hops.size() << " hops." << "\n";
     }
     
-    // print_unexpected_hops(output);
+    
 
     output.close();
     csv_file.close();
+
+    calculate_network_stats(hops);
+    print_unexpected_hops();
     
     std::cout << "Results saved to traceroute_output.txt, traceroute_icmp.csv, and stats.txt" << std::endl;
     
