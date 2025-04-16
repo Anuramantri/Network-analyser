@@ -1,3 +1,0 @@
-8.8.8.8 1
-google.com 13
-harvard.edu 1

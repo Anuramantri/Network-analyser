@@ -20,7 +20,7 @@
 #include <map>
 
 
-#define MAX_PACKET_SIZE 1028
+#define MAX_PACKET_SIZE 1472
 #define DEFAULT_MAX_HOPS 30
 #define DEFAULT_TIMEOUT 3
 #define DEFAULT_PROBES 3
@@ -257,15 +257,15 @@ std::tuple<double, int, double,double> estimate_bandwidth(const char *dest_addr,
 
     double jitter = -1;
 
-    if (intervals.size() >= 2) {
-        double sum_diff_squared = 0.0;
-        for (size_t i = 1; i < intervals.size(); ++i) {
-            sum_diff_squared += std::pow(intervals[i] - intervals[i - 1], 2);  // Squaring the difference
+    if (rtts.size() >= 2) {
+        double mean_rtt = std::accumulate(rtts.begin(), rtts.end(), 0.0) / rtts.size();
+        double sum_squared_diff = 0.0;
+        for (double rtt : rtts) {
+            sum_squared_diff += (rtt - mean_rtt) * (rtt - mean_rtt);
         }
-        jitter = std::sqrt(sum_diff_squared / (intervals.size() - 1));  // Taking the square root for standard deviation
+        jitter = std::sqrt(sum_squared_diff / (rtts.size() - 1));
+        jitter /= 1000.0; // convert to milliseconds
     }
-
-    jitter /= 1000.0; // in milliseconds
 
     double avg_rtt = std::accumulate(rtts.begin(), rtts.end(), 0.0) / rtts.size();
     avg_rtt /= 1000.0; // in milliseconds
@@ -440,11 +440,7 @@ void calculate_network_stats(const std::vector<HopProbes>& hops) {
         double min_bw = *std::min_element(all_bandwidths.begin(), all_bandwidths.end());
 
         stats << "Average Bandwidth: " << avg_bw << " Mbps\n";
-        stats << "Effective Bandwidth (Bottleneck): " << min_bw << " Mbps\n";
-        if (min_bandwidth != std::numeric_limits<double>::max()) {
-            stats << "Instantaneous Bottleneck Link: Hop " << bottleneck_hop_num << " (" << bottleneck_hop_ip 
-                      << ") with Effective Bandwidth: " << min_bandwidth << " Mbps" << std::endl;
-        }
+        stats << "Effective Bandwidth: " << min_bw << " Mbps\n";
     } else {
         stats << "No valid Bandwidth data.\n";
     }

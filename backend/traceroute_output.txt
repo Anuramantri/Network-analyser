@@ -1,0 +1,119 @@
+Traceroute to chatgpt.com (172.64.155.209), 30 hops max
+----------------------------------------------------------------------
+Hop 1:
+  Probe 1: 172.29.144.1 | RTT: 0.525 ms | BW: 1866.666667 Mbps | Jitter: 0.075379 ms | Average RTT:0.395200 ms
+ | Successful probes(/10):10
+  Probe 2: 172.29.144.1 | RTT: 0.295 ms | BW: 1866.666667 Mbps | Jitter: 0.080830 ms | Average RTT:0.366200 ms
+ | Successful probes(/10):10
+  Probe 3: 172.29.144.1 | RTT: 0.336 ms | BW: 2240.000000 Mbps | Jitter: 0.048420 ms | Average RTT:0.400300 ms
+ | Successful probes(/10):10
+----------------------------------------------------------------------
+Hop 2:
+  Probe 1: 10.7.0.5 | RTT: 11.77 ms | BW: 16.669657 Mbps | Jitter: 0.381345 ms | Average RTT:2.271900 ms
+ | Successful probes(/10):10
+  Probe 2: 10.7.0.5 | RTT: 3.588 ms | BW: 17.408094 Mbps | Jitter: 1.442060 ms | Average RTT:3.314800 ms
+ | Successful probes(/10):10
+  Probe 3: 10.7.0.5 | RTT: 8.552 ms | BW: 14.755298 Mbps | Jitter: 4.091983 ms | Average RTT:4.226500 ms
+ | Successful probes(/10):10
+----------------------------------------------------------------------
+Hop 3:
+  Probe 1: 172.16.4.4 | RTT: 3.396 ms | BW: 936.589147 Mbps | Jitter: 3.577253 ms | Average RTT:5.280500 ms
+ | Successful probes(/10):2
+  Probe 2: 172.16.4.4 | RTT: 10.333 ms | BW: N/A | Jitter: N/A | Average RTT:N/A
+ | Successful probes(/10):0
+  Probe 3: 172.16.4.4 | RTT: 10.785 ms | BW: N/A | Jitter: N/A | Average RTT:N/A
+ | Successful probes(/10):0
+----------------------------------------------------------------------
+Hop 4:
+  Probe 1: 14.139.98.1 | RTT: 48.349 ms | BW: 16.680196 Mbps | Jitter: 2.250429 ms | Average RTT:6.234800 ms
+ | Successful probes(/10):10
+  Probe 2: 14.139.98.1 | RTT: 5.888 ms | BW: 17.707787 Mbps | Jitter: 1.388925 ms | Average RTT:6.215900 ms
+ | Successful probes(/10):10
+  Probe 3: 14.139.98.1 | RTT: 5.696 ms | BW: 12.791932 Mbps | Jitter: 0.992680 ms | Average RTT:6.275400 ms
+ | Successful probes(/10):10
+----------------------------------------------------------------------
+Hop 5:
+  Probe 1: 10.117.81.253 | RTT: 4.452 ms | BW: 1400.000000 Mbps | Jitter: 3.732707 ms | Average RTT:6.843222 ms
+ | Successful probes(/10):9
+  Probe 2: 10.117.81.253 | RTT: 4.492 ms | BW: 14.576329 Mbps | Jitter: 2.360712 ms | Average RTT:5.071900 ms
+ | Successful probes(/10):10
+  Probe 3: 10.117.81.253 | RTT: 4.031 ms | BW: 14.462299 Mbps | Jitter: 5.627649 ms | Average RTT:5.919800 ms
+ | Successful probes(/10):10
+----------------------------------------------------------------------
+Hop 6:
+  Probe 1: 10.154.8.137 | RTT: 15.665 ms | BW: 28.117595 Mbps | Jitter: 24.900146 ms | Average RTT:22.762600 ms
+ | Successful probes(/10):10
+  Probe 2: 10.154.8.137 | RTT: 15.409 ms | BW: 349.483449 Mbps | Jitter: 9.923787 ms | Average RTT:20.156800 ms
+ | Successful probes(/10):10
+  Probe 3: 10.154.8.137 | RTT: 15.738 ms | BW: 408.127721 Mbps | Jitter: 9.116949 ms | Average RTT:18.567800 ms
+ | Successful probes(/10):10
+----------------------------------------------------------------------
+Hop 7:
+  Probe 1: 10.255.239.170 | RTT: 13.84 ms | BW: 39.799986 Mbps | Jitter: 21.309606 ms | Average RTT:24.412900 ms
+ | Successful probes(/10):10
+  Probe 2: 10.255.239.170 | RTT: 13.986 ms | BW: 1182.222222 Mbps | Jitter: 2.836746 ms | Average RTT:16.325600 ms
+ | Successful probes(/10):10
+  Probe 3: 10.255.239.170 | RTT: 15.771 ms | BW: 22.200542 Mbps | Jitter: 1.275298 ms | Average RTT:13.669600 ms
+ | Successful probes(/10):10
+----------------------------------------------------------------------
+Hop 8:
+  Probe 1: 10.152.7.38 | RTT: 14.816 ms | BW: 1600.000000 Mbps | Jitter: 1.230357 ms | Average RTT:15.034400 ms
+ | Successful probes(/10):10
+  Probe 2: 10.152.7.38 | RTT: 14.173 ms | BW: 630.877555 Mbps | Jitter: 6.062117 ms | Average RTT:18.020100 ms
+ | Successful probes(/10):10
+  Probe 3: 10.152.7.38 | RTT: 15.578 ms | BW: 17.011116 Mbps | Jitter: 30.651027 ms | Average RTT:25.875700 ms
+ | Successful probes(/10):10
+----------------------------------------------------------------------
+Hop 9:
+  Probe 1: 115.247.69.85 | RTT: 20.176 ms | BW: 15.748231 Mbps | Jitter: 28.014076 ms | Average RTT:24.313000 ms
+ | Successful probes(/10):10
+  Probe 2: 115.247.69.85 | RTT: 13.626 ms | BW: 1244.444444 Mbps | Jitter: 12.340203 ms | Average RTT:20.750400 ms
+ | Successful probes(/10):10
+  Probe 3: 115.247.69.85 | RTT: 30.664 ms | BW: 26.840270 Mbps | Jitter: 1.842690 ms | Average RTT:15.999500 ms
+ | Successful probes(/10):10
+----------------------------------------------------------------------
+Hop 10:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 11:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 12:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 13:
+  Probe 1: * Request timed out
+  Probe 2: * Request timed out
+  Probe 3: * Request timed out
+----------------------------------------------------------------------
+Hop 14:
+  Probe 1: 162.158.226.67 | RTT: 23.713 ms | BW: N/A | Jitter: N/A | Average RTT:N/A
+ | Successful probes(/10):0
+  Probe 2: 162.158.226.122 | RTT: 132.233 ms | BW: 42.000000 Mbps | Jitter: 31.299987 ms | Average RTT:37.533800 ms
+ | Successful probes(/10):10
+  Probe 3: 162.158.226.122 | RTT: 37.104 ms | BW: 1131.313131 Mbps | Jitter: 29.472211 ms | Average RTT:47.241000 ms
+ | Successful probes(/10):2
+----------------------------------------------------------------------
+Hop 15:
+  Probe 1: 162.158.226.67 | RTT: 144.811 ms | BW: N/A | Jitter: N/A | Average RTT:N/A
+ | Successful probes(/10):0
+  Probe 2: 162.158.226.71 | RTT: 88.972 ms | BW: N/A | Jitter: N/A | Average RTT:N/A
+ | Successful probes(/10):0
+  Probe 3: 162.158.226.81 | RTT: 16.498 ms | BW: N/A | Jitter: N/A | Average RTT:N/A
+ | Successful probes(/10):0
+----------------------------------------------------------------------
+Hop 16:
+  Probe 1: 104.18.32.47 | RTT: 15.944 ms | BW: 627.160494 Mbps | Jitter: 1.631295 ms | Average RTT:16.475500 ms
+ | Successful probes(/10):2
+  Probe 2: 104.18.32.47 | RTT: 24.599 ms | BW: 1400.000000 Mbps | Jitter: 0.840345 ms | Average RTT:16.338667 ms
+ | Successful probes(/10):3
+  Probe 3: 104.18.32.47 | RTT: 23.421 ms | BW: N/A | Jitter: N/A | Average RTT:N/A
+ | Successful probes(/10):0
+----------------------------------------------------------------------
+Traceroute completed with 16 hops.
