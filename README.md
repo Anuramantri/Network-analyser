@@ -29,7 +29,7 @@ streamlit run app.py
 cd backend
 uvicorn main:app --reload
 ```
-You will be prompted for your sudo password to run low-level network tools. 
+You will be prompted for your sudo password to run the tool. 
 
 
 
