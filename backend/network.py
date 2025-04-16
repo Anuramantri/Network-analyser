@@ -108,8 +108,7 @@ def build_graph(hops,output_file="network_topology.html",dest_ip=None):
                 net.add_node(ip, label=ip, title=title, color=color)
                 node_info[ip] = True
             curr_ips.add(ip)
-
-        # Connect previous hop to current hop
+  # Connect previous hop to current hop
       
         if hop_index > 0:
             main_prev_ip = select_main_node(hops[hop_index - 1])

@@ -254,11 +254,11 @@ std::tuple<double, int, double> estimate_bandwidth(const char *dest_addr, const 
     double jitter = -1;
 
     if (intervals.size() >= 2) {
-        double sum_diff = 0.0;
+        double sum_diff_squared = 0.0;
         for (size_t i = 1; i < intervals.size(); ++i) {
-            sum_diff += std::abs(intervals[i] - intervals[i - 1]);
+            sum_diff_squared += std::pow(intervals[i] - intervals[i - 1], 2);  // Squaring the difference
         }
-        jitter = sum_diff / (intervals.size() - 1);
+        jitter = std::sqrt(sum_diff_squared / (intervals.size() - 1));  // Taking the square root for standard deviation
     }
 
     jitter /= 1000.0; // in milliseconds
