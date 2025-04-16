@@ -3,6 +3,7 @@ import requests
 import re
 from folium.plugins import AntPath
 from ipaddress import ip_address
+import os
 
 IPINFO_TOKEN = "a2b763057ddcfd" # unlimited api requests with this token
 
@@ -55,6 +56,8 @@ def generate_map(traceroute_data, token):
             locations.append((ip, location))
     if not locations:
         print("[!] No valid IP locations found. Map not generated.")
+        if os.path.exists("geolocation_map.html"):
+             os.remove("geolocation_map.html")
         return
 
     for i in range(len(locations) - 1):

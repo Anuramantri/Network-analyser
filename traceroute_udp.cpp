@@ -82,14 +82,14 @@ int get_and_update_usage_count(const std::string& destination) {
 
 
 
-std::tuple<double, int, double> estimate_bandwidth(const char *dest_addr, const char *from_addr, int ttl) {
+std::tuple<double, int, double,double> estimate_bandwidth(const char *dest_addr, const char *from_addr, int ttl) {
     int udp_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     int icmp_sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 
     // Ensure sockets are created successfully
     if (udp_sock < 0 || icmp_sock < 0) {
         std::cerr << "Socket creation failed. Root privileges needed for raw socket." << std::endl;
-        return {-1, 0, -1};
+        return {-1, 0, -1,-1};
     }
 
     // Set TTL
@@ -97,7 +97,7 @@ std::tuple<double, int, double> estimate_bandwidth(const char *dest_addr, const 
         std::cerr << "Failed to set TTL." << std::endl;
         close(udp_sock);
         close(icmp_sock);
-        return {-1, 0, -1};
+        return {-1, 0, -1,-1};
     }
 
     // Set a 1-second receive timeout on the ICMP socket
@@ -115,8 +115,9 @@ std::tuple<double, int, double> estimate_bandwidth(const char *dest_addr, const 
 
     int large_size = 1400;
     int num_probes = 10;
-    std::vector<double> bandwidths;
+   std::vector<double> bandwidths;
     std::vector<double> intervals;
+    std::vector<double> rtts;
 
     int valid_probes = 0;
     std::string expected_reply_ip = from_addr;
@@ -133,7 +134,7 @@ std::tuple<double, int, double> estimate_bandwidth(const char *dest_addr, const 
         socklen_t from_len1 = sizeof(from1), from_len2 = sizeof(from2);
 
         fd_set read_set;
-        FD_ZERO(&read_set);
+        FD_ZERO(&read_set );
         FD_SET(icmp_sock, &read_set);
 
         struct timeval timeout;
@@ -182,8 +183,12 @@ std::tuple<double, int, double> estimate_bandwidth(const char *dest_addr, const 
         auto interval = std::chrono::duration_cast<std::chrono::microseconds>(
             second_arrival - first_arrival).count();
 
+        auto rtt = std::chrono::duration_cast<std::chrono::microseconds>(
+            first_arrival - start_time).count();
+        
         if (interval <= 0) continue;
 
+        rtts.push_back(rtt);
         intervals.push_back(interval);
 
         double bw = (large_size * 8.0) / interval;
@@ -207,6 +212,9 @@ std::tuple<double, int, double> estimate_bandwidth(const char *dest_addr, const 
 
     jitter /= 1000.0; // in milliseconds
 
+    double avg_rtt = std::accumulate(rtts.begin(), rtts.end(), 0.0) / rtts.size();
+    avg_rtt /= 1000.0; // in milliseconds
+
     double final_bw = -1;
     if (bandwidths.size() >= 3) {
         std::sort(bandwidths.begin(), bandwidths.end());
@@ -219,7 +227,7 @@ std::tuple<double, int, double> estimate_bandwidth(const char *dest_addr, const 
         final_bw = std::accumulate(bandwidths.begin(), bandwidths.end(), 0.0) / bandwidths.size();
     }
 
-    return {final_bw, valid_probes, jitter};
+    return {final_bw, valid_probes, jitter,avg_rtt};
 }
 
 struct ProbeReply {
@@ -228,6 +236,7 @@ struct ProbeReply {
     double bandwidth;
     int num_probes;
     double jitter;
+    double avg_rtt;
 };
 
 struct HopProbes {
@@ -303,14 +312,15 @@ std::vector<HopProbes> traceroute(const char *destination, int max_hops, int tim
                 inet_ntop(AF_INET, &from.sin_addr, from_addr, sizeof(from_addr));
 
                 double rtt = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
-                std::tuple<double, int, double> bw = estimate_bandwidth(dest_addr, from_addr, ttl);
+                std::tuple<double, int, double,double> bw = estimate_bandwidth(dest_addr, from_addr, ttl);
 
                 ProbeReply reply = {
                     .ip_address = from_addr,
                     .rtt = rtt,
                     .bandwidth = std::get<0>(bw),
                     .num_probes = std::get<1>(bw),
-                    .jitter = std::get<2>(bw)
+                    .jitter = std::get<2>(bw),
+                    .avg_rtt = std::get<3>(bw)
                 };
 
                 hop.replies.push_back(reply);
@@ -507,6 +517,7 @@ int main(int argc, char *argv[]) {
                    << " | RTT: " << reply.rtt << " ms"
                    << " | BW: " << (reply.bandwidth > 0 ? std::to_string(reply.bandwidth) + " Mbps" : "N/A")
                    << " | Jitter: " << (reply.jitter > 0 ? std::to_string(reply.jitter) + " ms" : "N/A")
+                   << " | Average RTT:" << (reply.avg_rtt > 0 ? std::to_string(reply.avg_rtt) + " ms" : "N/A") << "\n"
                    << " | Successful probes(/10):" << reply.num_probes << "\n";
     
             // Check if the destination is reached

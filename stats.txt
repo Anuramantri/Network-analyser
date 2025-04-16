@@ -1,5 +1,6 @@
 Total Hops: 16
-Average RTT: 22.9423 ms
-Average Bandwidth: 1368.89 Mbps
-Instantaneous Bottleneck Link: Hop 3 (10.1.0.3) with Effective Bandwidth: 17.1855 Mbps
-Bottleneck Based on Average per Hop: Hop 4 (172.16.4.4) with Average Bandwidth: 629.347 Mbps
+Average RTT: 23.8285 ms
+Average Bandwidth: 547.486 Mbps
+Effective Bandwidth (Bottleneck): 3.53492 Mbps
+Instantaneous Bottleneck Link: Hop 12 (192.178.110.248) with Effective Bandwidth: 3.53492 Mbps
+Average Jitter: 4.55394 ms

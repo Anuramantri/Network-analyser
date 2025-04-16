@@ -1,6 +1,4 @@
 Total Hops: 13
-Average RTT: 12.079 ms
-Average Bandwidth: 750.958 Mbps
-Effective Bandwidth (Bottleneck): 7.89622 Mbps
-Instantaneous Bottleneck Link: Hop 6 (10.117.81.253) with Effective Bandwidth: 7.89622 Mbps
-Average Jitter: 1.75469 ms
+Average RTT: 20.745 ms
+No valid Bandwidth data.
+No valid Jitter data.

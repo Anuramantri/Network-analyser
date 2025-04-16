@@ -45,15 +45,20 @@ async def run_traceroute (
         stats = f.read()
 
     with open(hops_file, "r") as f:
-        hops = f.read()
+        hops = f.read().strip()
 
-    return {
+    response = {
         "message": "Traceroute completed",
         "map_url": "/map",
         "network_topology_url": "/network_topology",
         "traceroute_output": traceroute_text,
-        "stats": stats
+        "stats": stats,
     }
+
+    if hops:
+        response["unexpected_hops"] = hops
+
+    return response
 
 
 @app.get("/map")

@@ -25,6 +25,8 @@ def select_main_node(hop):
     return min(candidates, key=lambda ip: stats[ip]['rtt'])
 
 
+import re
+
 def parse_traceroute(filename):
     with open(filename, 'r') as file:
         lines = file.readlines()
@@ -37,37 +39,64 @@ def parse_traceroute(filename):
     hops = []
     current_hop = []
 
-    for line in lines[1:]:
+    i = 1
+    while i < len(lines):
+        line = lines[i]
+
         hop_match = re.match(r"Hop (\d+):", line)
         if hop_match:
             if current_hop:
                 hops.append(current_hop)
                 current_hop = []
+            i += 1
             continue
 
-        # Updated regex to support "N/A" without units
+        timeout_match = re.match(r"\s+Probe \d+: \* Request timed out", line)
+        if timeout_match:
+            current_hop.append({
+                "ip": "*",
+                "rtt": None,
+                "bw": None,
+                "jitter": None,
+                "success": 0
+            })
+            i += 1
+            continue
+
+        # Probe line with optional success info on same line
         probe_match = re.match(
-            r"\s+Probe \d+: ([\d\.]+) \| RTT: ([\d\.]+) ms \| BW: ([\d\.NA/]+) ?(?:Mbps)? \| Jitter: ([\d\.NA/]+) ?(?:ms)? \| Successful probes\(/10\):(\d+)",
+            r"\s+Probe \d+: ([\d\.]+) \| RTT: ([\d\.]+) ms \| BW: ([\d\.NA/]+) ?(?:Mbps)? \| Jitter: ([\d\.NA/]+) ?(?:ms)? \| Average RTT:([\d\.NA/]+) ?(?:ms)?(?:\s*\| Successful probes\(/10\):(\d+))?",
             line
         )
 
         if probe_match:
-            ip, rtt, bw, jitter, success = probe_match.groups()
+            ip, rtt, bw, jitter, avg_rtt, success = probe_match.groups()
+            if success is None:
+                # try to look at next line
+                next_line = lines[i + 1] if i + 1 < len(lines) else ""
+                success_match = re.search(r"Successful probes\(/10\):(\d+)", next_line)
+                if success_match:
+                    success = success_match.group(1)
+                    i += 1  # skip the next line as it's consumed
+
             bw = None if bw == "N/A" else float(bw)
             jitter = None if jitter == "N/A" else float(jitter)
+
             current_hop.append({
                 "ip": ip,
                 "rtt": float(rtt),
                 "bw": bw,
                 "jitter": jitter,
-                "success": int(success)
+                "success": int(success) if success else 0
             })
 
+        i += 1
 
     if current_hop:
         hops.append(current_hop)
 
-    return hops,dest_ip
+    return hops, dest_ip
+
 
 
 
@@ -76,10 +105,10 @@ def compute_bandwidth_bins(hops):
     quantiles = np.quantile(all_bw, [0.33, 0.66]) if all_bw else [0, 0]
     return quantiles
 
-def get_color(bw, is_source, quantiles):
+def get_color(bw, is_source, quantiles,is_timeout):
     if is_source:
         return 'blue'
-    if bw is None:
+    if (bw is None) or is_timeout:
         return 'gray'
     if bw <= quantiles[0]:
         return 'red'
@@ -89,7 +118,7 @@ def get_color(bw, is_source, quantiles):
         return 'green'
 
 
-def build_graph(hops,output_file="network_topology.html",dest_ip=None):
+def build_graph(hops, output_file="network_topology.html", dest_ip=None):
     net = Network(height="700px", width="100%", bgcolor="#222222", font_color="white", directed=True)
     node_info = {}
     quantiles = compute_bandwidth_bins(hops)
@@ -103,15 +132,21 @@ def build_graph(hops,output_file="network_topology.html",dest_ip=None):
         for entry in hop:
             ip = entry['ip']
             if ip not in node_info:
+                # Handle timeouts separately
+                is_timeout = ip == "*"
+                if ip == "*":
+                    ip = "Unknown (timeout)"
                 title = f"IP: {ip}\nRTT: {entry['rtt']} ms\nBW: {entry['bw']} Mbps\nJitter: {entry['jitter']} ms"
-                color = get_color(entry['bw'], (hop_index == 0 or dest_ip == ip), quantiles)
+                color = get_color(entry['bw'], (hop_index == 0 or dest_ip == ip), quantiles, is_timeout)
                 net.add_node(ip, label=ip, title=title, color=color)
                 node_info[ip] = True
             curr_ips.add(ip)
-  # Connect previous hop to current hop
-      
+
+        # Connect previous hop to current hop
         if hop_index > 0:
             main_prev_ip = select_main_node(hops[hop_index - 1])
+            if main_prev_ip is None:
+                continue
             for curr_ip in curr_ips:
                 if ((main_prev_ip, curr_ip) not in added_edges) and (main_prev_ip != curr_ip):
                     net.add_edge(main_prev_ip, curr_ip)
@@ -145,32 +180,3 @@ def build_graph(hops,output_file="network_topology.html",dest_ip=None):
     with open(output_file, "w") as f:
         f.write(html)
 
-
-if __name__ == "__main__":
-    hops = parse_traceroute("traceroute_output.txt")
-    build_graph(hops)
-
-
-
-        # main_path_edges = []
-        # for i in range(1, len(hops)):
-        #     main_prev_ip = select_main_node(hops[i - 1])
-        #     main_curr_ip = select_main_node(hops[i])
-        #     # Compute the average BW for the main node in the current hop (if available)
-        #     bw_values = [entry['bw'] for entry in hops[i] if entry['ip'] == main_curr_ip and entry['bw'] is not None]
-        #     # If there is no available BW value, use a very high number so it isn't treated as the bottleneck.
-        #     avg_bw = sum(bw_values) / len(bw_values) if bw_values else float('inf')
-        #     main_path_edges.append((main_prev_ip, main_curr_ip, avg_bw))
-        
-        # # Find the edge with the minimum average bandwidth
-        # if main_path_edges:
-        #     bottleneck_edge = min(main_path_edges, key=lambda x: x[2])
-        #     bottleneck_src, bottleneck_dst, _ = bottleneck_edge
-        #     # Add an extra edge with glowing attributes (or re-add it to override default styling).
-        #     net.add_edge(
-        #         bottleneck_src,
-        #         bottleneck_dst,
-        #         color="cyan",
-        #         width=5,
-        #         title="Bottleneck Link (Lowest Bandwidth)"
-        #     )
