@@ -1,5 +1,5 @@
-Total Hops: 30
-Average RTT: 11.7254 ms
-Average Bandwidth: 1014.88 Mbps
-Effective Bandwidth: 10.6553 Mbps
-Average Jitter: 4.37447 ms
+Total Hops: 12
+Average RTT: 10.7067 ms
+Average Bandwidth: 944.525 Mbps
+Effective Bandwidth: 4.88089 Mbps
+Average Jitter: 4.31696 ms

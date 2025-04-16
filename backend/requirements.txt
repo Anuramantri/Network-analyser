@@ -5,3 +5,8 @@ pydantic
 python-multipart
 networkx
 numpy 
+seaborn
+pandas
+matplotlib
+requests
+pyvis
