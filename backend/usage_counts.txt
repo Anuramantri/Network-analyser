@@ -2,5 +2,5 @@
 chatgpt.com 1
 google.com 47
 harvard.edu 1
-ims.iitgn.ac.in 11
+ims.iitgn.ac.in 12
 instagram.com 7

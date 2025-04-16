@@ -1,27 +1,27 @@
 Traceroute to ims.iitgn.ac.in (10.0.137.79), 30 hops max
 ----------------------------------------------------------------------
 Hop 1:
-  Probe 1: 172.29.144.1 | RTT: 0.534 ms | BW: 1866.666667 Mbps | Jitter: 0.069870 ms | Average RTT:0.360900 ms
+  Probe 1: 172.29.144.1 | RTT: 0.611 ms | BW: 1866.666667 Mbps | Jitter: 0.071837 ms | Average RTT:0.404200 ms
  | Successful probes(/10):10
-  Probe 2: 172.29.144.1 | RTT: 0.307 ms | BW: 1866.666667 Mbps | Jitter: 0.079502 ms | Average RTT:0.309200 ms
+  Probe 2: 172.29.144.1 | RTT: 0.369 ms | BW: 1866.666667 Mbps | Jitter: 0.107095 ms | Average RTT:0.388000 ms
  | Successful probes(/10):10
-  Probe 3: 172.29.144.1 | RTT: 0.213 ms | BW: 1866.666667 Mbps | Jitter: 0.027933 ms | Average RTT:0.327700 ms
+  Probe 3: 172.29.144.1 | RTT: 0.475 ms | BW: 1866.666667 Mbps | Jitter: 0.104423 ms | Average RTT:0.379200 ms
  | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 2:
-  Probe 1: 10.7.0.5 | RTT: 2.742 ms | BW: 17.021906 Mbps | Jitter: 0.943477 ms | Average RTT:2.485000 ms
+  Probe 1: 10.7.0.5 | RTT: 2.139 ms | BW: 17.405332 Mbps | Jitter: 1.416774 ms | Average RTT:4.453300 ms
  | Successful probes(/10):10
-  Probe 2: 10.7.0.5 | RTT: 2.202 ms | BW: 15.084510 Mbps | Jitter: 0.473259 ms | Average RTT:2.404900 ms
+  Probe 2: 10.7.0.5 | RTT: 5.963 ms | BW: 14.699149 Mbps | Jitter: 2.099768 ms | Average RTT:3.740600 ms
  | Successful probes(/10):10
-  Probe 3: 10.7.0.5 | RTT: 2.227 ms | BW: 629.893455 Mbps | Jitter: 0.603360 ms | Average RTT:2.384800 ms
+  Probe 3: 10.7.0.5 | RTT: 3.543 ms | BW: 14.423702 Mbps | Jitter: 1.397682 ms | Average RTT:4.502800 ms
  | Successful probes(/10):10
 ----------------------------------------------------------------------
 Hop 3:
-  Probe 1: 10.0.137.79 | RTT: 2.026 ms | BW: 859.090909 Mbps | Jitter: 6.196973 ms | Average RTT:7.276700 ms
+  Probe 1: 10.0.137.79 | RTT: 3.219 ms | BW: 8.527517 Mbps | Jitter: 2.879446 ms | Average RTT:4.480800 ms
  | Successful probes(/10):10
-  Probe 2: 10.0.137.79 | RTT: 1.548 ms | BW: 26.327118 Mbps | Jitter: 5.379840 ms | Average RTT:6.822100 ms
+  Probe 2: 10.0.137.79 | RTT: 2.111 ms | BW: 15.708398 Mbps | Jitter: 5.831207 ms | Average RTT:5.807800 ms
  | Successful probes(/10):10
-  Probe 3: 10.0.137.79 | RTT: 3.772 ms | BW: 11.508535 Mbps | Jitter: 4.760051 ms | Average RTT:4.779900 ms
+  Probe 3: 10.0.137.79 | RTT: 4.315 ms | BW: 7.681290 Mbps | Jitter: 23.259133 ms | Average RTT:12.401500 ms
  | Successful probes(/10):10
 ----------------------------------------------------------------------
 Destination reached at hop 3.

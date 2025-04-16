@@ -505,6 +505,9 @@ int main(int argc, char *argv[]) {
     
             if (reply.rtt > 0) {
                 hop_rtts.push_back(reply.rtt);
+                if (reply.bandwidth > 0) {      
+                    hop_bws.push_back(reply.bandwidth);  
+                }
             }
     
     
