@@ -56,8 +56,8 @@ def generate_map(traceroute_data, token):
             locations.append((ip, location))
     if not locations:
         print("[!] No valid IP locations found. Map not generated.")
-        if os.path.exists("geolocation_map.html"):
-             os.remove("geolocation_map.html")
+        if os.path.exists("traceroute_map.html"):
+             os.remove("traceroute_map.html")
         return
 
     for i in range(len(locations) - 1):

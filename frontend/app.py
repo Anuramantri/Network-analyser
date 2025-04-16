@@ -3,6 +3,7 @@ import requests
 import streamlit.components.v1 as components
 import io
 from PIL import Image
+import time
 
 st.title("Bandwit: Network Analysis and Bandwidth Visualizer")
 
@@ -38,15 +39,30 @@ if st.button("Run"):
                 st.error("Traceroute failed to run.")
                 st.session_state.traceroute_ran = False
 
+timestamp = int(time.time())
+map_url = f"http://localhost:8000/map?v={timestamp}"
+topo_url = f"http://localhost:8000/network_topology?v={timestamp}"
+
 # Display results if traceroute ran successfully
 if st.session_state.traceroute_ran and st.session_state.traceroute_data:
     data = st.session_state.traceroute_data
 
     st.markdown("### Network Path Map")
-    components.iframe("http://localhost:8000/map", height=500, width=700)
+    map_response = requests.get(map_url)
+
+    if map_response.ok:
+        components.html(map_response.text, height=500, width=700)
+    else:
+        st.warning("⚠️ Map not generated")
+
 
     st.markdown("### Network Topology")
-    components.iframe("http://localhost:8000/network_topology", height=750, width=900)
+    topo_response = requests.get(topo_url)
+
+    if topo_response.ok:
+        components.html(topo_response.text, height=500, width=700)
+    else:
+        st.warning("⚠️ Topology not generated")
 
     st.markdown("### Raw Output")
     st.code(data["traceroute_output"], language="text")
@@ -101,3 +117,6 @@ if st.session_state.traceroute_ran and st.session_state.traceroute_data:
                     st.error("Failed to fetch one or both plot images.")
             else:
                 st.error("Failed to load plots.")
+else:
+    st.info("Run a traceroute to generate the latest map and network topology.")
+

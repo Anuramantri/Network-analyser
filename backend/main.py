@@ -6,7 +6,7 @@ from network import build_graph, parse_traceroute
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from network_analysis import load_and_process_data, plot_hop_metrics
-
+import time
 
 app = FastAPI()
 IPINFO_TOKEN = "a2b763057ddcfd"
@@ -38,6 +38,11 @@ async def run_traceroute (
     traceroute_data2,destination = parse_traceroute(output_file)
     build_graph(traceroute_data2,dest_ip=destination)
 
+    if os.path.exists("traceroute_map.html"):
+        os.utime("traceroute_map.html", None)
+    if os.path.exists("network_topology.html"):
+        os.utime("network_topology.html", None)
+
     with open(output_file, "r") as f:
         traceroute_text = f.read()
 
@@ -63,30 +68,22 @@ async def run_traceroute (
 
 @app.get("/map")
 async def get_map():
+    if not os.path.exists("traceroute_map.html"):
+        return JSONResponse(
+            content={"error": "Map not generated."},
+            status_code=404
+        )
     return FileResponse("traceroute_map.html", media_type="text/html")
 
 @app.get("/network_topology")
 async def get_topology():
+    if not os.path.exists("network_topology.html"):
+        return JSONResponse(
+            content={"error": "Topology not generated."},
+            status_code=404
+        )
     return FileResponse("network_topology.html")
 
-# @app.get("/plots")
-# async def get_plots(time_of_day: str = "Morning", protocol: str = "ICMP"):
-#     protocol = protocol.upper()
-#     if protocol not in ["ICMP", "UDP"]:
-#         return JSONResponse(content={"error": "Unsupported protocol"}, status_code=400)
-
-#     csv_file = "traceroute_icmp.csv" if protocol == "ICMP" else "traceroute_udp.csv"
-#     df = load_and_process_data(csv_file)
-    
-#     if df is None:
-#         return JSONResponse(content={"error": "No data available"}, status_code=404)
-
-#     plot_hop_metrics(df, time_of_day, out_dir="static")
-
-#     return {
-#         "rtt_plot": f"/static/rtt_{time_of_day.lower()}.png",
-#         "bandwidth_plot": f"/static/bandwidth_{time_of_day.lower()}.png"
-# }
 @app.get("/plots")
 
 async def get_plots(

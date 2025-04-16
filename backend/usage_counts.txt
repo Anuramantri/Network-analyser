@@ -1,6 +1,6 @@
-8.8.8.8 15
+8.8.8.8 18
 chatgpt.com 1
-google.com 45
+google.com 47
 harvard.edu 1
-ims.iitgn.ac.in 4
+ims.iitgn.ac.in 11
 instagram.com 7
